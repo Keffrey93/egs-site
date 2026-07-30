@@ -1,0 +1,16 @@
+{
+  "name": "egs-server",
+  "version": "1.0.0",
+  "description": "API backend eGS (inscriptions, alertes, rendez-vous) — Node.js natif + nodemailer pour l'envoi d'e-mails d'alerte.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check-alertes": "node scripts/trigger-check.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.14"
+  }
+}

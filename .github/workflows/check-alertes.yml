@@ -1,0 +1,19 @@
+name: Vérification des alertes eGS
+
+on:
+  schedule:
+    # Tous les jours à 6h00 UTC (~7h00 à Libreville, UTC+1)
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}   # permet aussi de le lancer manuellement depuis l'onglet Actions
+
+jobs:
+  check-alertes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Appeler /api/tasks/check-alertes
+        run: |
+          curl -sf -X POST "${EGS_API_URL}/api/tasks/check-alertes" \
+            -H "x-api-key: ${ADMIN_API_KEY}"
+        env:
+          EGS_API_URL: ${{ secrets.EGS_API_URL }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}

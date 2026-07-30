@@ -1,0 +1,37 @@
+# Blueprint Render pour le backend eGS.
+# Sur render.com : New > Blueprint, connecte le dépôt contenant ce fichier,
+# Render détecte le service ci-dessous automatiquement.
+#
+# ⚠️ Le plan gratuit n'a pas de disque persistant : data/egs.db est réinitialisée
+# à chaque redéploiement/redémarrage. Pour une vraie mise en production, ajoute
+# un disque persistant (plan payant) ou migre vers une base hébergée.
+#
+# La vérification périodique des alertes n'est PAS gérée ici : depuis début 2026,
+# les Cron Jobs Render ne sont plus disponibles en gratuit. À la place, un
+# GitHub Action gratuit s'en charge — voir .github/workflows/check-alertes.yml.
+
+services:
+  - type: web
+    name: egs-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: ADMIN_API_KEY
+        generateValue: true
+      - key: ALLOWED_ORIGIN
+        value: "*"          # à remplacer par l'URL réelle du site une fois connue
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: ALERT_FROM_EMAIL
+        sync: false
+      - key: ALERT_COOLDOWN_DAYS
+        value: "3"

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Assistant — eGS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --void:#0A1220; --void-deep:#060A12; --panel:#101C30; --panel-line:rgba(237,241,247,0.10);
+  --signal:#39D98A; --signal-dim:rgba(57,217,138,0.18);
+  --risk:#FF6A4D; --risk-dim:rgba(255,106,77,0.18);
+  --amber:#F5B942; --amber-dim:rgba(245,185,66,0.18);
+  --sky:#EDF1F7; --sky-dim:rgba(237,241,247,0.62);
+  --paper:#F5F6F1; --paper-line:rgba(10,18,32,0.10);
+  --ink:#0A1220; --ink-soft:#4B5568;
+  --radius-lg:26px; --radius-md:16px; --maxw:1180px;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+img,svg{display:block;max-width:100%;}
+a{color:inherit;text-decoration:none;}
+ul{margin:0;padding:0;list-style:none;}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;font-weight:600;letter-spacing:-0.01em;margin:0;}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 32px;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--signal);display:flex;align-items:center;gap:10px;}
+.eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 4px var(--signal-dim);display:inline-block;}
+.eyebrow.risk{color:var(--risk);} .eyebrow.risk::before{background:var(--risk);box-shadow:0 0 0 4px var(--risk-dim);}
+:focus-visible{outline:2.5px solid var(--signal);outline-offset:3px;}
+section{padding:76px 0;}
+.section-head{max-width:640px;margin-bottom:44px;}
+.section-head h2{font-size:clamp(26px,3vw,36px);margin-top:14px;line-height:1.15;}
+.section-head p{font-size:16px;color:var(--ink-soft);margin-top:12px;line-height:1.6;}
+.section-head.on-dark h2{color:#fff;} .section-head.on-dark p{color:var(--sky-dim);}
+.on-dark{color:#fff;}
+.bg-void{background:var(--void);color:var(--sky);}
+.bg-paper{background:var(--paper);}
+
+/* NAV */
+nav.topnav{position:sticky;top:0;z-index:50;background:rgba(245,246,241,0.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--paper-line);}
+nav.topnav .wrap{display:flex;align-items:center;justify-content:space-between;padding:15px 32px;gap:20px;}
+.brand{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:19px;color:var(--void);flex:none;}
+.brand .orbit{width:24px;height:24px;flex:none;}
+.navlinks{display:flex;gap:22px;font-size:13.5px;font-weight:500;color:var(--ink-soft);flex-wrap:wrap;}
+.navlinks a{padding:6px 2px;border-bottom:2px solid transparent;}
+.navlinks a:hover,.navlinks a.active{color:var(--void);border-color:var(--signal);}
+.nav-cta{font-size:13px;font-weight:600;background:var(--void);color:var(--sky);padding:10px 18px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;transition:transform .18s ease;flex:none;}
+.nav-cta:hover{transform:translateY(-1px);background:#000;}
+@media (max-width:980px){ .navlinks{display:none;} }
+
+/* HERO (small) */
+.pagehead{background:linear-gradient(180deg,var(--void) 0%, var(--void-deep) 100%);color:var(--sky);position:relative;overflow:hidden;padding:56px 0 60px;}
+.pagehead::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(var(--panel-line) 1px, transparent 1px),linear-gradient(90deg, var(--panel-line) 1px, transparent 1px);background-size:64px 64px;-webkit-mask-image:radial-gradient(900px 500px at 20% 20%, #000 0%, transparent 75%);mask-image:radial-gradient(900px 500px at 20% 20%, #000 0%, transparent 75%);opacity:.6;}
+.pagehead h1{font-size:clamp(30px,4vw,44px);line-height:1.1;color:#fff;position:relative;}
+.pagehead h1 span{color:var(--signal);}
+.pagehead p.lead{font-size:16.5px;line-height:1.6;color:var(--sky-dim);max-width:560px;margin-top:16px;position:relative;}
+.pagehead .eyebrow{margin-bottom:16px;position:relative;}
+.disclaimer{margin-top:22px;background:rgba(245,185,66,0.10);border:1px solid rgba(245,185,66,0.3);border-radius:12px;padding:12px 16px;font-size:12.5px;color:#F5D89A;display:flex;gap:10px;max-width:640px;position:relative;line-height:1.55;}
+
+/* BUTTONS */
+.btn{font-size:14px;font-weight:600;padding:13px 22px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;border:1px solid transparent;cursor:pointer;transition:transform .18s ease, box-shadow .18s ease, background .18s ease;font-family:'Inter',sans-serif;}
+.btn-primary{background:var(--signal);color:#06170F;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(57,217,138,0.28);}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-ghost{border-color:var(--paper-line);color:var(--ink);background:transparent;}
+.btn-ghost:hover{border-color:var(--ink);transform:translateY(-2px);}
+.btn-ghost.on-dark{border-color:rgba(237,241,247,0.28);color:#fff;}
+.btn-ghost.on-dark:hover{border-color:#fff;}
+.btn-block{width:100%;justify-content:center;}
+.btn-sm{padding:9px 16px;font-size:12.5px;}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--paper-line);border-radius:var(--radius-md);padding:26px;}
+.card-dark{background:var(--panel);border:1px solid var(--panel-line);border-radius:var(--radius-md);padding:26px;color:#fff;}
+.grid{display:grid;gap:20px;}
+.grid-2{grid-template-columns:1fr 1fr;} .grid-3{grid-template-columns:repeat(3,1fr);} .grid-4{grid-template-columns:repeat(4,1fr);} .grid-5{grid-template-columns:repeat(5,1fr);}
+@media (max-width:980px){ .grid-3,.grid-4,.grid-5{grid-template-columns:1fr 1fr;} }
+@media (max-width:640px){ .grid-2,.grid-3,.grid-4,.grid-5{grid-template-columns:1fr;} }
+
+/* BADGES */
+.badge{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;padding:5px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+.badge.low{background:var(--signal-dim);color:#1C8F5C;}
+.badge.mid{background:var(--amber-dim);color:#B07A15;}
+.badge.high{background:var(--risk-dim);color:#C8492F;}
+
+/* FORMS */
+label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:7px;letter-spacing:.01em;}
+input,select,textarea{width:100%;font-family:'Inter',sans-serif;font-size:14.5px;padding:12px 14px;border-radius:10px;border:1px solid var(--paper-line);background:#fff;color:var(--ink);}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-dim);}
+.field{margin-bottom:18px;}
+.form-msg{margin-top:16px;padding:12px 15px;border-radius:10px;font-size:13.5px;display:none;}
+.form-msg.show{display:block;}
+.form-msg.ok{background:var(--signal-dim);color:#1C8F5C;}
+.form-msg.err{background:var(--risk-dim);color:#C8492F;}
+.local-note{margin-top:12px;font-size:12px;color:var(--ink-soft);display:flex;gap:8px;align-items:flex-start;line-height:1.5;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:14px;}
+th{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);text-align:left;padding:0 12px 10px;border-bottom:1px solid var(--paper-line);font-weight:500;}
+td{padding:13px 12px;border-bottom:1px solid var(--paper-line);}
+tr:last-child td{border-bottom:none;}
+
+/* CHAT */
+.chat-shell{background:var(--void);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--panel-line);}
+.chat-log{height:440px;overflow-y:auto;padding:26px;display:flex;flex-direction:column;gap:14px;}
+.msg{max-width:78%;padding:12px 15px;border-radius:14px;font-size:14px;line-height:1.5;}
+.msg.bot{background:var(--panel);color:#fff;border-bottom-left-radius:4px;align-self:flex-start;}
+.msg.user{background:var(--signal);color:#06170F;border-bottom-right-radius:4px;align-self:flex-end;}
+.chat-suggestions{display:flex;flex-wrap:wrap;gap:8px;padding:0 26px 18px;}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--sky-dim);border:1px solid var(--panel-line);border-radius:999px;padding:7px 13px;cursor:pointer;background:transparent;}
+.chip:hover{border-color:var(--signal);color:#fff;}
+.chat-input-row{display:flex;gap:10px;padding:18px;border-top:1px solid var(--panel-line);}
+.chat-input-row input{background:var(--panel);border-color:var(--panel-line);color:#fff;}
+.chat-input-row input::placeholder{color:var(--sky-dim);}
+.chat-send{background:var(--signal);color:#06170F;border:none;width:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
+.msg.typing{display:flex;gap:5px;align-items:center;padding:14px 16px;}
+.msg.typing span{width:6px;height:6px;border-radius:50%;background:var(--sky-dim);animation:typingBounce 1.2s infinite ease-in-out;}
+.msg.typing span:nth-child(2){animation-delay:.18s;}
+.msg.typing span:nth-child(3){animation-delay:.36s;}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-4px);opacity:1;}}
+
+/* RISK PANEL BARS */
+.bar-chart{display:flex;align-items:flex-end;gap:5px;height:110px;margin-top:14px;}
+.bar-chart .bar{flex:1;background:linear-gradient(180deg, var(--signal), rgba(57,217,138,0.25));border-radius:4px 4px 0 0;min-height:4px;}
+.city-card{cursor:pointer;transition:border-color .15s ease, transform .15s ease;}
+.city-card:hover{border-color:var(--signal);transform:translateY(-3px);}
+.city-card.active{border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-dim);}
+.skel{background:linear-gradient(90deg, var(--paper-line) 25%, rgba(0,0,0,0.03) 50%, var(--paper-line) 75%);background-size:200% 100%;animation:sk 1.4s ease-in-out infinite;border-radius:6px;}
+@keyframes sk{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+footer.site{background:var(--void-deep);color:var(--sky-dim);padding:34px 0;}
+footer.site .wrap{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;flex-wrap:wrap;gap:8px;}
+footer.site a:hover{color:#fff;}
+
+.two-col{display:grid;grid-template-columns:1.1fr 0.9fr;gap:40px;align-items:start;}
+@media (max-width:900px){ .two-col{grid-template-columns:1fr;} }
+
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <svg class="orbit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="12" cy="12" rx="10" ry="4.2"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/><ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(60 12 12)"/></svg>
+      eGS
+    </a>
+    <ul class="navlinks">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="donnees.html">Données satellite</a></li>
+      <li><a href="chatbot.html" class="active">Assistant</a></li>
+      <li><a href="teleconsultation.html">Téléconsultation</a></li>
+      <li><a href="assistance.html">Alertes</a></li>
+      <li><a href="equipe.html">Équipe</a></li>
+    </ul>
+    <a class="nav-cta" href="inscription.html">S'inscrire</a>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="eyebrow">Fonctionnalité — Chatbot</div>
+    <h1>Un assistant pour vos <span>questions santé</span></h1>
+    <p class="lead">Symptômes, prévention, zones à risque, prise de rendez-vous — posez votre question ou choisissez une suggestion.</p>
+    <div class="disclaimer">⚠️ Assistant local à base de règles : il comprend vos questions même mal orthographiées ou reformulées, sur les symptômes, la prévention, les zones à risque et l'utilisation du site. Aucune donnée n'est envoyée à un serveur. Il ne remplace pas un avis médical — en cas d'urgence, contactez un centre de santé.</div>
+  </div>
+</header>
+
+<section class="bg-paper">
+  <div class="wrap" style="max-width:760px;">
+    <div class="chat-shell">
+      <div class="chat-log" id="chat-log"></div>
+      <div class="chat-suggestions">
+        <button class="chip" data-q="Quels sont les symptômes du paludisme ?">Symptômes</button>
+        <button class="chip" data-q="Comment se protéger du paludisme ?">Prévention</button>
+        <button class="chip" data-q="Quelles sont les zones à risque ?">Zones à risque</button>
+        <button class="chip" data-q="Je veux prendre rendez-vous">Rendez-vous</button>
+      </div>
+      <form class="chat-input-row" id="chat-form">
+        <input type="text" id="chat-input" placeholder="Écrivez votre message…" autocomplete="off" required />
+        <button class="chat-send" type="submit" aria-label="Envoyer">→</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer class="site">
+  <div class="wrap"><p>© 2026 eGS — Team Gandalf</p><p>Assistant local à base de règles — aucune donnée envoyée à un serveur</p></div>
+</footer>
+
+<script>
+/*
+  eGS — Assistant conversationnel à base de règles (v2).
+  100% local, aucune donnée envoyée à un serveur.
+
+  Améliorations par rapport à la v1 :
+   - normalisation forte (accents, ponctuation, lettres répétées : "bonjourrrr" -> "bonjour")
+   - tolérance aux fautes de frappe / variantes (distance de Levenshtein + préfixe sur chaque mot,
+     donc pas besoin de lister séparément singulier/pluriel : "symptome" reconnaît "symptomes")
+   - reconnaissance par SCORE : chaque règle est notée selon les indices trouvés (les expressions
+     précises comptent plus que les mots isolés et ambigus), la meilleure règle l'emporte
+   - beaucoup plus de sujets couverts (transmission, traitement, calcul de l'indice,
+     technologies satellites, équipe, coût, confidentialité, grossesse/enfants, etc.)
+*/
+(function(){
+
+  // ---------- Normalisation ----------
+  function stripAccents(s){
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  }
+  function collapseRepeats(s){
+    // "bonjourrrr" -> limite les lettres répétées 3x+ à 2 occurrences
+    return s.replace(/(.)\1{2,}/g,'$1$1');
+  }
+  function normalize(text){
+    let t = stripAccents(String(text||'').toLowerCase());
+    t = t.replace(/['’]/g, ' ');
+    t = t.replace(/[^a-z0-9\s?!.]/g,' ');
+    t = collapseRepeats(t);
+    t = t.replace(/\s+/g,' ').trim();
+    return t;
+  }
+  function tokenize(normText){
+    return normText.split(' ').filter(Boolean);
+  }
+
+  // ---------- Distance de Levenshtein (tolérance aux fautes) ----------
+  function levenshtein(a, b){
+    if(a === b) return 0;
+    const al = a.length, bl = b.length;
+    if(al === 0) return bl;
+    if(bl === 0) return al;
+    let prev = new Array(bl+1);
+    for(let j=0;j<=bl;j++) prev[j] = j;
+    for(let i=1;i<=al;i++){
+      const cur = [i];
+      for(let j=1;j<=bl;j++){
+        const cost = a[i-1] === b[j-1] ? 0 : 1;
+        cur[j] = Math.min(
+          prev[j] + 1,      // suppression
+          cur[j-1] + 1,     // insertion
+          prev[j-1] + cost  // substitution
+        );
+      }
+      prev = cur;
+    }
+    return prev[bl];
+  }
+  // tolérance proportionnelle à la longueur du mot : mots courts = 0 faute, moyens = 1, longs = 2
+  function fuzzyThreshold(len){
+    if(len <= 4) return 0;
+    if(len <= 8) return 1;
+    return 2;
+  }
+  function tokenMatches(token, keyword){
+    if(token === keyword) return true;
+    if(token.length < 3 || keyword.length < 3) return false; // évite les faux positifs sur mots trop courts
+    // préfixe (gère pluriels/variantes : "symptomes" contient "symptome")
+    if(token.startsWith(keyword) || keyword.startsWith(token)) return true;
+    const dist = levenshtein(token, keyword);
+    return dist <= fuzzyThreshold(keyword.length);
+  }
+
+  // Un "indice" (clue) peut être :
+  //  - un mot simple -> comparé mot à mot avec tolérance aux fautes
+  //  - une expression ("rendez vous", "zone a risque") -> recherchée en sous-chaîne dans le texte normalisé
+  function clueMatches(normText, tokens, clue){
+    const c = normalize(clue);
+    if(c.includes(' ')){
+      if(normText.includes(c)) return true;
+      if(normText.includes(c.replace(/\s+/g,''))) return true; // "rendezvous"
+      return false;
+    }
+    return tokens.some(tok => tokenMatches(tok, c));
+  }
+
+  // ---------- Base de règles ----------
+  const RULES = [
+    { id:'urgence', weight:3,
+      kw:['urgence','grave','danger','dangereux','coma','confusion','convulsion',
+          'forte fievre','tres malade','je vais mal','au secours','ca s aggrave'],
+      a:"⚠️ En cas de signes graves (forte fièvre, confusion, convulsions), rendez-vous immédiatement au centre de santé le plus proche ou appelez les secours. Cet assistant ne remplace pas un avis médical." },
+
+    { id:'grossesse', weight:2,
+      kw:['grossesse','enceinte','femme enceinte','bebe','nourrisson','allaitement',
+          'enfant','nouveau ne','pediatrique','mon fils','ma fille'],
+      a:"Les enfants en bas âge et les femmes enceintes sont particulièrement vulnérables au paludisme : la prévention (moustiquaire, répulsifs adaptés) est encore plus importante, et toute fièvre doit être prise au sérieux sans délai. Le plus sûr est de prendre rapidement rendez-vous en téléconsultation ou de consulter un centre de santé." },
+
+    { id:'symptomes', weight:1,
+      kw:['symptome','signe','fievre','frisson','mal de tete','courbature','fatigue intense',
+          'nausee','vomissement','je suis malade','ca ne va pas','douleurs musculaires'],
+      a:"Les symptômes courants du paludisme sont : fièvre, frissons, maux de tête, douleurs musculaires et fatigue intense, apparaissant souvent 10 à 15 jours après la piqûre infectante. En cas de fièvre au Gabon, consultez rapidement un centre de santé — le paludisme se soigne bien s'il est pris à temps." },
+
+    { id:'transmission', weight:1,
+      kw:['transmission','transmet','attrape','contamine','contamination','anophele',
+          'vecteur','piqure','comment on choppe','comment attrape t on','femelle'],
+      a:"Le paludisme se transmet par la piqûre d'un moustique femelle du genre Anophèle, actif surtout entre le coucher et le lever du soleil. Ces moustiques se reproduisent dans les eaux stagnantes, ce qui explique le lien avec les données climatiques utilisées par eGS." },
+
+    { id:'traitement', weight:1,
+      kw:['traitement','soigner','medicament','antipaludeen','guerir','guerison',
+          'comment le soigner','remede','faut il des antibiotiques'],
+      a:"Le paludisme se traite avec des médicaments antipaludéens prescrits par un professionnel de santé, d'autant plus efficaces que la prise en charge est précoce. N'essayez pas de vous autotraiter : en cas de suspicion, prenez rendez-vous en téléconsultation ou rendez-vous au centre de santé le plus proche." },
+
+    { id:'prevention', weight:1,
+      kw:['prevention','eviter','proteger','protection','moustiquaire','repulsif',
+          'anti moustique','insecticide','grillage','vetements longs','eau stagnante',
+          'comment se proteger','comment eviter'],
+      a:"Les gestes de prévention : dormir sous moustiquaire imprégnée, utiliser des répulsifs, porter des vêtements longs le soir, éliminer les eaux stagnantes autour du logement, et poser des grillages moustiquaires aux fenêtres." },
+
+    { id:'zones-risque', weight:1,
+      kw:['zone a risque','quelle ville','ou se trouve le risque','carte des risques',
+          'region a risque','niveau de risque','ville risquee','ou est le risque',
+          'quelles sont les zones','villes surveillees'],
+      a:"Consultez la page « Données satellite » : elle affiche un indice de risque par ville, calculé à partir de données climatiques réelles (température, humidité, précipitations)." },
+
+    { id:'calcul-indice', weight:1,
+      kw:['comment est calcule','comment ca marche l indice','calcul de l indice',
+          'methode de calcul','pondere','ponderation','score par variable',
+          'comment vous calculez','nasa power','14 jours','indice de risque'],
+      a:"L'indice combine les 14 derniers jours de données climatiques (température, humidité, précipitations) issues de l'API NASA POWER. Chaque variable obtient un score selon sa proximité avec les conditions favorables au moustique vecteur, puis les scores sont pondérés (40% température, 35% humidité, 25% précipitations) — un modèle simple, à but pédagogique." },
+
+    { id:'technologie', weight:1,
+      kw:['satellite','sentinel','landsat','smos','galileo','geolocalisation',
+          'intelligence artificielle',' ia ','comment fonctionne egs','comment marche egs',
+          'technologie','donnees satellitaires','c est quoi egs','koi egs','quoi egs'],
+      a:"eGS croise des données climatiques satellitaires (Sentinel-2, Landsat, SMOS), la géolocalisation Galileo et l'intelligence artificielle pour estimer, ville par ville, le niveau de risque de paludisme au Gabon." },
+
+    { id:'consultation', weight:1,
+      kw:['consultation','teleconsultation','medecin','rendez vous','rdv','docteur',
+          'creneau','disponibilite','annuler mon rendez vous','prendre rendez vous',
+          'parler a un medecin','voir un docteur'],
+      a:"Vous pouvez prendre rendez-vous en téléconsultation depuis la page « Téléconsultation », en choisissant un créneau parmi les disponibilités des 3 prochains jours et en décrivant votre motif." },
+
+    { id:'inscription', weight:1,
+      kw:['inscription','inscrire','creer un compte','creer mon profil','compte',
+          'profil','s inscrire','creer un profil'],
+      a:"L'inscription se fait sur la page « Inscription » — cela crée votre profil, permet de recevoir des alertes personnalisées selon votre ville et facilite vos prises de rendez-vous. Aucune donnée n'est transmise à un serveur externe." },
+
+    { id:'alertes', weight:1,
+      kw:['alerte','notification','abonnement','abonn','s abonner','etre alerte',
+          'etre prevenu','suivre une ville'],
+      a:"La page « Assistance » vous permet de vous abonner aux alertes d'une ville : eGS vérifie son indice de risque à partir des données NASA POWER et vous prévient s'il devient élevé." },
+
+    { id:'confidentialite', weight:1,
+      kw:['confidentialite','donnees personnelles','vie privee','securite des donnees',
+          'mes donnees','protection des donnees','rgpd'],
+      a:"eGS fonctionne principalement dans votre navigateur : aucune donnée personnelle n'est transmise à un serveur externe lors de l'inscription. Seules les données climatiques publiques (NASA POWER) sont interrogées pour calculer les indices de risque." },
+
+    { id:'equipe', weight:1,
+      kw:['equipe','team gandalf','qui etes vous','qui a cree','qui a fait','fondateurs',
+          'createurs','developpeurs','qui vous etes'],
+      a:"eGS est porté par Team Gandalf, une équipe de cinq profils complémentaires en stratégie, développement et design. Vous pouvez découvrir chaque membre sur la page « Équipe »." },
+
+    { id:'cout', weight:1,
+      kw:['cout','prix','tarif','gratuit','payant','combien ca coute','modele economique'],
+      a:"L'utilisation d'eGS (assistant, indice de risque, alertes, inscription) est gratuite. Le projet, lui, a un coût de structure estimé à 150 315 € pour passer de l'idée à un service opérationnel — voir la page « Équipe » pour le détail du modèle économique." },
+
+    { id:'stats-officielles', weight:1,
+      kw:['combien de cas','statistique','statistiques','chiffres officiels','bilan',
+          'combien de morts','combien de personnes touchees','chiffres du paludisme'],
+      a:"Selon l'OMS (World Malaria Report 2024, données Gabon validées au 14/11/2024) : 137 856 cas présumés et confirmés recensés en 2023, dont 59 248 confirmés en secteur public, pour 205 décès rapportés. L'OMS estime le nombre réel de cas à environ 569 800 sur l'année. Détail sur la page « Données satellite »." },
+
+    { id:'salutation', weight:1,
+      kw:['bonjour','bonsoir','salut','coucou','hello','hey','bjr'],
+      a:"Bonjour ! Je suis l'assistant eGS. Je peux vous renseigner sur les symptômes, la prévention, les zones à risque, la téléconsultation, les alertes ou l'équipe du projet." },
+
+    { id:'remerciement', weight:1,
+      kw:['merci','je te remercie'],
+      a:"Avec plaisir. N'hésitez pas si vous avez d'autres questions." },
+
+    { id:'au-revoir', weight:1,
+      kw:['au revoir','a bientot','bye','a plus','ciao','bonne journee','bonne soiree'],
+      a:"Au revoir, prenez soin de vous ! N'hésitez pas à revenir si vous avez d'autres questions sur le paludisme ou sur eGS." },
+
+    { id:'aide', weight:1,
+      kw:['aide','menu','options','que peux tu faire','tu peux faire quoi',
+          'aide moi','je ne comprends pas','de quoi tu peux parler'],
+      a:"Je peux vous renseigner sur : les symptômes et la prévention du paludisme, les zones à risque, la prise de rendez-vous en téléconsultation, l'inscription, les alertes par ville, et le fonctionnement d'eGS. Posez votre question librement, ou utilisez les suggestions ci-dessus." },
+  ];
+
+  const FALLBACK = "Je n'ai pas toutes les données pour répondre précisément à cela. Vous pouvez reformuler, ou consulter directement un professionnel de santé pour toute question médicale. Tapez « aide » pour voir les sujets que je connais.";
+
+  function scoreRules(text){
+    const normText = ' ' + normalize(text) + ' ';
+    const tokens = tokenize(normText);
+    const scored = RULES.map(rule => {
+      let score = 0, matched = 0;
+      for(const clue of rule.kw){
+        if(clueMatches(normText, tokens, clue)){
+          matched++;
+          score += rule.weight * (clue.trim().includes(' ') ? 1.6 : 1);
+        }
+      }
+      return { rule, score, matched };
+    }).filter(s => s.matched > 0);
+    scored.sort((a,b) => b.score - a.score);
+    return scored;
+  }
+
+  function reply(text){
+    const scored = scoreRules(text);
+    if(scored.length === 0) return FALLBACK;
+    return scored[0].rule.a;
+  }
+
+  window.eGSChat = { reply };
+})();
+</script>
+<script>
+/*
+  eGS — Logique d'affichage du chat.
+  L'assistant est entièrement local (voir moteur ci-dessus) : aucune requête réseau,
+  donc pas d'attente ni de dépendance à une connexion pour répondre.
+*/
+const log = document.getElementById('chat-log');
+
+function addMsg(text, who){
+  const el = document.createElement('div');
+  el.className = 'msg ' + who;
+  el.textContent = text;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+  return el;
+}
+function showTyping(){
+  const el = document.createElement('div');
+  el.className = 'msg bot typing';
+  el.id = 'typing-indicator';
+  el.innerHTML = '<span></span><span></span><span></span>';
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+}
+function hideTyping(){
+  const el = document.getElementById('typing-indicator');
+  if(el) el.remove();
+}
+
+function respondTo(text){
+  addMsg(text, 'user');
+  showTyping();
+  // Petit délai purement cosmétique (l'assistant est local et répond instantanément).
+  setTimeout(() => {
+    hideTyping();
+    addMsg(eGSChat.reply(text), 'bot');
+  }, 260 + Math.random() * 220);
+}
+
+addMsg("Bonjour ! Je suis l'assistant eGS. Posez-moi votre question comme vous le feriez à une personne — fautes de frappe et reformulations, pas de souci — je fais de mon mieux pour comprendre.", 'bot');
+
+document.getElementById('chat-form').addEventListener('submit', e=>{
+  e.preventDefault();
+  const input = document.getElementById('chat-input');
+  const val = input.value.trim();
+  if(!val) return;
+  input.value = '';
+  respondTo(val);
+});
+document.querySelectorAll('.chip').forEach(chip=>{
+  chip.addEventListener('click', ()=> respondTo(chip.dataset.q));
+});
+</script>
+</body>
+</html>

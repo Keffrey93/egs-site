@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Données satellite — eGS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --void:#0A1220; --void-deep:#060A12; --panel:#101C30; --panel-line:rgba(237,241,247,0.10);
+  --signal:#39D98A; --signal-dim:rgba(57,217,138,0.18);
+  --risk:#FF6A4D; --risk-dim:rgba(255,106,77,0.18);
+  --amber:#F5B942; --amber-dim:rgba(245,185,66,0.18);
+  --sky:#EDF1F7; --sky-dim:rgba(237,241,247,0.62);
+  --paper:#F5F6F1; --paper-line:rgba(10,18,32,0.10);
+  --ink:#0A1220; --ink-soft:#4B5568;
+  --radius-lg:26px; --radius-md:16px; --maxw:1180px;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+img,svg{display:block;max-width:100%;}
+a{color:inherit;text-decoration:none;}
+ul{margin:0;padding:0;list-style:none;}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;font-weight:600;letter-spacing:-0.01em;margin:0;}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 32px;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--signal);display:flex;align-items:center;gap:10px;}
+.eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 4px var(--signal-dim);display:inline-block;}
+.eyebrow.risk{color:var(--risk);} .eyebrow.risk::before{background:var(--risk);box-shadow:0 0 0 4px var(--risk-dim);}
+:focus-visible{outline:2.5px solid var(--signal);outline-offset:3px;}
+section{padding:76px 0;}
+.section-head{max-width:640px;margin-bottom:44px;}
+.section-head h2{font-size:clamp(26px,3vw,36px);margin-top:14px;line-height:1.15;}
+.section-head p{font-size:16px;color:var(--ink-soft);margin-top:12px;line-height:1.6;}
+.section-head.on-dark h2{color:#fff;} .section-head.on-dark p{color:var(--sky-dim);}
+.on-dark{color:#fff;}
+.bg-void{background:var(--void);color:var(--sky);}
+.bg-paper{background:var(--paper);}
+
+/* NAV */
+nav.topnav{position:sticky;top:0;z-index:50;background:rgba(245,246,241,0.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--paper-line);}
+nav.topnav .wrap{display:flex;align-items:center;justify-content:space-between;padding:15px 32px;gap:20px;}
+.brand{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:19px;color:var(--void);flex:none;}
+.brand .orbit{width:24px;height:24px;flex:none;}
+.navlinks{display:flex;gap:22px;font-size:13.5px;font-weight:500;color:var(--ink-soft);flex-wrap:wrap;}
+.navlinks a{padding:6px 2px;border-bottom:2px solid transparent;}
+.navlinks a:hover,.navlinks a.active{color:var(--void);border-color:var(--signal);}
+.nav-cta{font-size:13px;font-weight:600;background:var(--void);color:var(--sky);padding:10px 18px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;transition:transform .18s ease;flex:none;}
+.nav-cta:hover{transform:translateY(-1px);background:#000;}
+@media (max-width:980px){ .navlinks{display:none;} }
+
+/* HERO (small) */
+.pagehead{background:linear-gradient(180deg,var(--void) 0%, var(--void-deep) 100%);color:var(--sky);position:relative;overflow:hidden;padding:56px 0 60px;}
+.pagehead::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(var(--panel-line) 1px, transparent 1px),linear-gradient(90deg, var(--panel-line) 1px, transparent 1px);background-size:64px 64px;-webkit-mask-image:radial-gradient(900px 500px at 20% 20%, #000 0%, transparent 75%);mask-image:radial-gradient(900px 500px at 20% 20%, #000 0%, transparent 75%);opacity:.6;}
+.pagehead h1{font-size:clamp(30px,4vw,44px);line-height:1.1;color:#fff;position:relative;}
+.pagehead h1 span{color:var(--signal);}
+.pagehead p.lead{font-size:16.5px;line-height:1.6;color:var(--sky-dim);max-width:560px;margin-top:16px;position:relative;}
+.pagehead .eyebrow{margin-bottom:16px;position:relative;}
+.disclaimer{margin-top:22px;background:rgba(245,185,66,0.10);border:1px solid rgba(245,185,66,0.3);border-radius:12px;padding:12px 16px;font-size:12.5px;color:#F5D89A;display:flex;gap:10px;max-width:640px;position:relative;line-height:1.55;}
+
+/* BUTTONS */
+.btn{font-size:14px;font-weight:600;padding:13px 22px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;border:1px solid transparent;cursor:pointer;transition:transform .18s ease, box-shadow .18s ease, background .18s ease;font-family:'Inter',sans-serif;}
+.btn-primary{background:var(--signal);color:#06170F;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(57,217,138,0.28);}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-ghost{border-color:var(--paper-line);color:var(--ink);background:transparent;}
+.btn-ghost:hover{border-color:var(--ink);transform:translateY(-2px);}
+.btn-ghost.on-dark{border-color:rgba(237,241,247,0.28);color:#fff;}
+.btn-ghost.on-dark:hover{border-color:#fff;}
+.btn-block{width:100%;justify-content:center;}
+.btn-sm{padding:9px 16px;font-size:12.5px;}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--paper-line);border-radius:var(--radius-md);padding:26px;}
+.card-dark{background:var(--panel);border:1px solid var(--panel-line);border-radius:var(--radius-md);padding:26px;color:#fff;}
+.grid{display:grid;gap:20px;}
+.grid-2{grid-template-columns:1fr 1fr;} .grid-3{grid-template-columns:repeat(3,1fr);} .grid-4{grid-template-columns:repeat(4,1fr);} .grid-5{grid-template-columns:repeat(5,1fr);}
+@media (max-width:980px){ .grid-3,.grid-4,.grid-5{grid-template-columns:1fr 1fr;} }
+@media (max-width:640px){ .grid-2,.grid-3,.grid-4,.grid-5{grid-template-columns:1fr;} }
+
+/* BADGES */
+.badge{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;padding:5px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+.badge.low{background:var(--signal-dim);color:#1C8F5C;}
+.badge.mid{background:var(--amber-dim);color:#B07A15;}
+.badge.high{background:var(--risk-dim);color:#C8492F;}
+
+/* FORMS */
+label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:7px;letter-spacing:.01em;}
+input,select,textarea{width:100%;font-family:'Inter',sans-serif;font-size:14.5px;padding:12px 14px;border-radius:10px;border:1px solid var(--paper-line);background:#fff;color:var(--ink);}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-dim);}
+.field{margin-bottom:18px;}
+.form-msg{margin-top:16px;padding:12px 15px;border-radius:10px;font-size:13.5px;display:none;}
+.form-msg.show{display:block;}
+.form-msg.ok{background:var(--signal-dim);color:#1C8F5C;}
+.form-msg.err{background:var(--risk-dim);color:#C8492F;}
+.local-note{margin-top:12px;font-size:12px;color:var(--ink-soft);display:flex;gap:8px;align-items:flex-start;line-height:1.5;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:14px;}
+th{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);text-align:left;padding:0 12px 10px;border-bottom:1px solid var(--paper-line);font-weight:500;}
+td{padding:13px 12px;border-bottom:1px solid var(--paper-line);}
+tr:last-child td{border-bottom:none;}
+
+/* CHAT */
+.chat-shell{background:var(--void);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--panel-line);}
+.chat-log{height:440px;overflow-y:auto;padding:26px;display:flex;flex-direction:column;gap:14px;}
+.msg{max-width:78%;padding:12px 15px;border-radius:14px;font-size:14px;line-height:1.5;}
+.msg.bot{background:var(--panel);color:#fff;border-bottom-left-radius:4px;align-self:flex-start;}
+.msg.user{background:var(--signal);color:#06170F;border-bottom-right-radius:4px;align-self:flex-end;}
+.chat-suggestions{display:flex;flex-wrap:wrap;gap:8px;padding:0 26px 18px;}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--sky-dim);border:1px solid var(--panel-line);border-radius:999px;padding:7px 13px;cursor:pointer;background:transparent;}
+.chip:hover{border-color:var(--signal);color:#fff;}
+.chat-input-row{display:flex;gap:10px;padding:18px;border-top:1px solid var(--panel-line);}
+.chat-input-row input{background:var(--panel);border-color:var(--panel-line);color:#fff;}
+.chat-input-row input::placeholder{color:var(--sky-dim);}
+.chat-send{background:var(--signal);color:#06170F;border:none;width:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
+
+/* RISK PANEL BARS */
+.bar-chart{display:flex;align-items:flex-end;gap:5px;height:110px;margin-top:14px;}
+.bar-chart .bar{flex:1;background:linear-gradient(180deg, var(--signal), rgba(57,217,138,0.25));border-radius:4px 4px 0 0;min-height:4px;}
+.city-card{cursor:pointer;transition:border-color .15s ease, transform .15s ease;}
+.city-card:hover{border-color:var(--signal);transform:translateY(-3px);}
+.city-card.active{border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-dim);}
+.skel{background:linear-gradient(90deg, var(--paper-line) 25%, rgba(0,0,0,0.03) 50%, var(--paper-line) 75%);background-size:200% 100%;animation:sk 1.4s ease-in-out infinite;border-radius:6px;}
+@keyframes sk{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+footer.site{background:var(--void-deep);color:var(--sky-dim);padding:34px 0;}
+footer.site .wrap{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;flex-wrap:wrap;gap:8px;}
+footer.site a:hover{color:#fff;}
+
+.two-col{display:grid;grid-template-columns:1.1fr 0.9fr;gap:40px;align-items:start;}
+@media (max-width:900px){ .two-col{grid-template-columns:1fr;} }
+
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <svg class="orbit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="12" cy="12" rx="10" ry="4.2"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/><ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(60 12 12)"/></svg>
+      eGS
+    </a>
+    <ul class="navlinks">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="donnees.html" class="active">Données satellite</a></li>
+      <li><a href="chatbot.html">Assistant</a></li>
+      <li><a href="teleconsultation.html">Téléconsultation</a></li>
+      <li><a href="assistance.html">Alertes</a></li>
+      <li><a href="equipe.html">Équipe</a></li>
+    </ul>
+    <a class="nav-cta" href="inscription.html">S'inscrire</a>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="eyebrow risk">Étude de cas — Paludisme</div>
+    <h1>Ce que voient les satellites <span>avant l'épidémie</span></h1>
+    <p class="lead">Le paludisme se transmet par piqûre de moustique Anophèle, dont les gîtes larvaires dépendent de conditions observables depuis l'espace : eau stagnante, chaleur, humidité du sol.</p>
+  </div>
+</header>
+
+<section class="bg-paper">
+  <div class="wrap">
+    <div class="two-col">
+      <div>
+        <div class="eyebrow">Source</div>
+        <div class="section-head"><h2>NASA POWER</h2>
+        <p>Les chiffres de ce site sont interrogés en direct sur l'API publique <strong>NASA POWER</strong> (Prediction Of Worldwide Energy Resources, NASA Langley Research Center), qui distribue des variables climatiques dérivées de réanalyses assimilant des observations satellitaires — sans clé d'accès requise.</p></div>
+        <table>
+          <thead><tr><th>Variable</th><th>Code API</th><th>Usage épidémiologique</th></tr></thead>
+          <tbody>
+            <tr><td>Température à 2m</td><td class="mono">T2M</td><td>L'Anophèle se développe entre 20 et 30°C, optimum ≈ 27°C</td></tr>
+            <tr><td>Humidité relative</td><td class="mono">RH2M</td><td>Une humidité élevée prolonge la survie du moustique adulte</td></tr>
+            <tr><td>Précipitations</td><td class="mono">PRECTOTCORR</td><td>Favorise les points d'eau stagnante, gîtes larvaires</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3 style="font-size:17px;">Missions satellites mobilisables</h3>
+        <ul style="margin-top:14px;">
+          <li style="padding:12px 0;border-top:1px solid var(--paper-line);"><b>Sentinel-2</b> (Copernicus/ESA) — imagerie optique haute résolution pour repérer végétation et points d'eau.</li>
+          <li style="padding:12px 0;border-top:1px solid var(--paper-line);"><b>Landsat</b> (NASA/USGS) — suivi de l'occupation des sols dans la durée.</li>
+          <li style="padding:12px 0;border-top:1px solid var(--paper-line);"><b>SMOS</b> (ESA) — mesure de l'humidité des sols par radiométrie micro-ondes.</li>
+          <li style="padding:12px 0;border-top:1px solid var(--paper-line);"><b>Constellation Galileo</b> — géolocalisation précise des signalements de terrain.</li>
+        </ul>
+        <div class="local-note">ℹ️ Le tableau de bord de ce site utilise aujourd'hui les données climatiques NASA POWER (dérivées de réanalyse). L'intégration d'imagerie brute Sentinel-2/SMOS nécessite un compte Copernicus/ESA et n'est pas branchée dans cette version.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bg-void">
+  <div class="wrap">
+    <div class="eyebrow risk">Explorateur</div>
+    <div class="section-head on-dark"><h2>Détail par ville</h2><p>Sélectionnez une ville pour voir ses données brutes des 14 derniers jours disponibles.</p></div>
+    <div class="grid grid-5" id="city-tabs" style="margin-bottom:24px;"></div>
+    <div class="card-dark" id="explorer-panel"></div>
+  </div>
+</section>
+
+<section class="bg-paper">
+  <div class="wrap">
+    <div class="eyebrow">Méthodologie</div>
+    <div class="section-head"><h2>Comment l'indice de risque est calculé</h2></div>
+    <div class="grid grid-3">
+      <div class="card"><h3 style="font-size:15.5px;">1 — Moyennes 14 jours</h3><p style="font-size:13.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55;">Température, humidité et cumul de précipitations sont moyennés sur les 14 derniers jours disponibles (J-7 à J-20, en raison du délai de publication de NASA POWER).</p></div>
+      <div class="card"><h3 style="font-size:15.5px;">2 — Score par variable</h3><p style="font-size:13.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55;">Chaque variable est convertie en score 0-100 selon sa proximité avec les conditions favorables au vecteur (température proche de 27°C, humidité &gt; 60%, pluviométrie modérée).</p></div>
+      <div class="card"><h3 style="font-size:15.5px;">3 — Pondération</h3><p style="font-size:13.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55;">Score final = 40% température + 35% humidité + 25% précipitations. Un modèle volontairement simple, à but pédagogique et exploratoire.</p></div>
+    </div>
+    <div class="disclaimer" style="margin-top:28px;max-width:none;">⚠️ Ce calcul est une estimation indicative construite pour ce projet. Il n'a pas été validé cliniquement et ne doit pas se substituer aux données officielles du Ministère de la Santé ou de l'OMS.</div>
+  </div>
+</section>
+
+<section class="bg-void">
+  <div class="wrap">
+    <div class="eyebrow risk">Données officielles</div>
+    <div class="section-head on-dark"><h2>Le paludisme au Gabon, en chiffres</h2><p>Contrairement à l'indice climatique ci-dessus (recalculé en direct par ville), les chiffres suivants sont des statistiques nationales annuelles, publiées par l'OMS à partir des données transmises par le Programme National de Lutte contre le Paludisme (PNLP) du Ministère de la Santé et des Affaires Sociales du Gabon.</p></div>
+    <div class="grid grid-4">
+      <div class="card-dark"><div class="mono" style="font-size:11px;color:var(--sky-dim);">Cas présumés + confirmés (2023)</div><div style="font-family:'Space Grotesk',sans-serif;font-size:26px;margin-top:8px;">137 856</div></div>
+      <div class="card-dark"><div class="mono" style="font-size:11px;color:var(--sky-dim);">Cas confirmés, secteur public</div><div style="font-family:'Space Grotesk',sans-serif;font-size:26px;margin-top:8px;">59 248</div></div>
+      <div class="card-dark"><div class="mono" style="font-size:11px;color:var(--sky-dim);">Décès rapportés (2023)</div><div style="font-family:'Space Grotesk',sans-serif;font-size:26px;margin-top:8px;">205</div></div>
+      <div class="card-dark"><div class="mono" style="font-size:11px;color:var(--sky-dim);">Population en zone à haute transmission</div><div style="font-family:'Space Grotesk',sans-serif;font-size:26px;margin-top:8px;">100%</div></div>
+    </div>
+    <div class="card-dark" style="margin-top:20px;">
+      <h3 style="font-size:15.5px;color:#fff;">Estimations OMS (au-delà des seuls cas rapportés au système de santé)</h3>
+      <p style="font-size:13.5px;color:var(--sky-dim);margin-top:8px;line-height:1.6;">L'OMS estime que le nombre réel de cas dépasse largement les cas confirmés en centre de santé : environ <strong>569 800 cas</strong> (intervalle 307 000 – 975 400) et <strong>433 décès</strong> (intervalle 371 – 540) sur l'année 2023. Le paludisme reste présent sur l'ensemble du territoire, à 100% à <em>Plasmodium falciparum</em>, transmis notamment par les vecteurs <em>Anopheles gambiae</em>, <em>An. coluzzii</em>, <em>An. funestus</em>, <em>An. moucheti</em> et <em>An. nili</em>. La distribution gratuite de moustiquaires imprégnées (depuis 2003) et la prévention chez la femme enceinte font partie des politiques nationales en vigueur.</p>
+    </div>
+    <div class="local-note" style="color:var(--sky-dim);margin-top:16px;">ℹ️ Source : Organisation mondiale de la Santé, <em>Malaria 2024 Gabon country profile</em> (données validées par le pays au 14 novembre 2024, issues du <em>World Malaria Report 2024</em>). Ces chiffres sont nationaux et annuels — ils ne permettent pas de calculer un indice de risque par ville en temps réel, contrairement aux données climatiques NASA POWER utilisées plus haut. Voir <a href="https://www.who.int/publications/m/item/malaria-2024-gab-country-profile" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;">le profil pays complet sur who.int</a>.</div>
+  </div>
+</section>
+
+<footer class="site">
+  <div class="wrap"><p>© 2026 eGS — Team Gandalf</p><p>Données : NASA POWER API · OMS (World Malaria Report 2024)</p></div>
+</footer>
+
+<script>
+/*
+  eGS — Module de données satellite
+  Source : NASA POWER (Prediction Of Worldwide Energy Resources), NASA Langley Research Center.
+  API publique, gratuite, sans clé — https://power.larc.nasa.gov/docs/services/api/
+  Paramètres utilisés : T2M (température à 2m, °C), RH2M (humidité relative à 2m, %),
+  PRECTOTCORR (précipitations corrigées, mm/jour). Ces variables sont dérivées de
+  réanalyses assimilant des observations satellitaires (dont MODIS, CERES).
+
+  eGS.CITIES : villes gabonaises suivies, avec coordonnées.
+  eGS.fetchCityClimate(city) : renvoie les 14 derniers jours disponibles.
+  eGS.riskIndex(data) : indice de risque paludisme simplifié (0-100), à visée pédagogique.
+*/
+window.eGS = window.eGS || {};
+
+eGS.CITIES = [
+  { id:'libreville',  name:'Libreville',province:'Estuaire',    lat:0.3901, lon:9.4544 },
+  { id:'port-gentil', name:'Port-Gentil',province:'Ogooué-Maritime',lat:-0.7193,lon:8.7815 },
+  { id:'franceville', name:'Franceville',province:'Haut-Ogooué', lat:-1.6333,lon:13.5833 },
+  { id:'oyem',        name:'Oyem',      province:'Woleu-Ntem',  lat:1.6,    lon:11.5667 },
+  { id:'lambarene',   name:'Lambaréné', province:'Moyen-Ogooué',lat:-0.7,   lon:10.2167 },
+  { id:'mouila',      name:'Mouila',    province:'Ngounié',     lat:-1.8685,lon:11.0559 },
+  { id:'tchibanga',   name:'Tchibanga', province:'Nyanga',      lat:-2.9333,lon:11.0 },
+  { id:'makokou',     name:'Makokou',   province:'Ogooué-Ivindo',lat:0.5667, lon:12.8667 },
+  { id:'koulamoutou', name:'Koulamoutou',province:'Ogooué-Lolo', lat:-1.1333,lon:12.4833 },
+];
+
+function fmtDate(d){
+  return d.toISOString().slice(0,10).replace(/-/g,'');
+}
+
+// NASA POWER a un décalage de publication de quelques jours : on vise J-7 à J-20.
+function dateRange(){
+  const end = new Date(); end.setUTCDate(end.getUTCDate() - 7);
+  const start = new Date(end); start.setUTCDate(start.getUTCDate() - 13);
+  return { start: fmtDate(start), end: fmtDate(end) };
+}
+
+eGS.fetchCityClimate = async function(city){
+  const { start, end } = dateRange();
+  const url = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,RH2M,PRECTOTCORR&community=AG&longitude=${city.lon}&latitude=${city.lat}&start=${start}&end=${end}&format=JSON`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('NASA POWER API — réponse ' + res.status);
+  const json = await res.json();
+  const p = json.properties.parameter;
+  const days = Object.keys(p.T2M).sort();
+  const series = days.map(d => ({
+    date: d,
+    temp: p.T2M[d],
+    humidity: p.RH2M[d],
+    precip: p.PRECTOTCORR[d],
+  })).filter(d => d.temp > -900 && d.humidity > -900 && d.precip > -900); // POWER renvoie -999 si absent
+  return series;
+};
+
+// Indice de risque simplifié (0-100) — PAS un outil de diagnostic médical.
+// Logique : l'Anophèle se reproduit préférentiellement entre 20-30°C (optimum ~27°C),
+// avec une humidité relative élevée (>60%) et une pluviométrie modérée (points d'eau
+// stagnante sans être lessivés par des pluies extrêmes).
+eGS.riskIndex = function(series){
+  if(!series.length) return null;
+  const avg = key => series.reduce((s,d)=>s+d[key],0) / series.length;
+  const temp = avg('temp');
+  const humidity = avg('humidity');
+  const precipTotal = series.reduce((s,d)=>s+d.precip,0);
+
+  const tempScore = Math.max(0, 100 - Math.abs(temp - 27) * 9);
+  const humScore = Math.min(100, Math.max(0, (humidity - 40) * (100/50)));
+  const precipScore = precipTotal <= 2 ? precipTotal * 15
+                     : precipTotal <= 40 ? 30 + (precipTotal-2)*1.6
+                     : Math.max(20, 100 - (precipTotal-40)*1.2);
+
+  const score = Math.round(tempScore*0.4 + humScore*0.35 + Math.min(100,precipScore)*0.25);
+  return { score: Math.max(0, Math.min(100, score)), temp, humidity, precipTotal };
+};
+
+eGS.riskLabel = function(score){
+  if(score === null) return { label:'Indisponible', cls:'mid' };
+  if(score >= 66) return { label:'Risque élevé', cls:'high' };
+  if(score >= 40) return { label:'Risque modéré', cls:'mid' };
+  return { label:'Risque faible', cls:'low' };
+};
+
+</script>
+<script>
+async function renderExplorer(){
+  const tabs = document.getElementById('city-tabs');
+  const panel = document.getElementById('explorer-panel');
+  tabs.innerHTML = eGS.CITIES.map((c,i)=>`<button class="btn ${i===0?'btn-primary':'btn-ghost on-dark'} btn-block" data-city="${c.id}" title="Province : ${c.province}">${c.name}</button>`).join('');
+  panel.innerHTML = '<div class="skel" style="height:180px;"></div>';
+
+  const cache = {};
+  async function load(id){
+    if(cache[id]) return cache[id];
+    const city = eGS.CITIES.find(c=>c.id===id);
+    const series = await eGS.fetchCityClimate(city);
+    const risk = eGS.riskIndex(series);
+    cache[id] = { city, series, risk };
+    return cache[id];
+  }
+
+  async function show(id){
+    tabs.querySelectorAll('button').forEach(b=>{
+      const active = b.dataset.city===id;
+      b.classList.toggle('btn-primary', active);
+      b.classList.toggle('btn-ghost', !active);
+      b.classList.toggle('on-dark', !active);
+    });
+    panel.innerHTML = '<div class="skel" style="height:180px;"></div>';
+    try{
+      const { city, series, risk } = await load(id);
+      const lbl = eGS.riskLabel(risk.score);
+      const rows = series.map(d=>`<tr><td class="mono">${d.date}</td><td>${d.temp.toFixed(1)} °C</td><td>${d.humidity.toFixed(0)} %</td><td>${d.precip.toFixed(1)} mm</td></tr>`).join('');
+      panel.innerHTML = `
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:baseline;margin-bottom:18px;">
+          <h3 style="font-size:19px;color:#fff;">${city.name} — indice ${risk.score}/100 <span class="badge ${lbl.cls}">${lbl.label}</span></h3>
+        </div>
+        <table style="color:var(--sky-dim);">
+          <thead><tr><th style="color:var(--sky-dim);">Date</th><th style="color:var(--sky-dim);">Température</th><th style="color:var(--sky-dim);">Humidité</th><th style="color:var(--sky-dim);">Précipitations</th></tr></thead>
+          <tbody style="color:#fff;">${rows}</tbody>
+        </table>`;
+    }catch(e){
+      panel.innerHTML = `<p style="color:var(--sky-dim);">Impossible de charger les données NASA POWER pour le moment (${e.message}). Réessayez dans un instant.</p>`;
+    }
+  }
+
+  tabs.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>show(b.dataset.city)));
+  show(eGS.CITIES[0].id);
+}
+renderExplorer();
+</script>
+</body>
+</html>
