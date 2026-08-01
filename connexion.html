@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <script src="assets/config.js"></script>
 <script src="assets/session.js" defer></script>
-<title>Inscription — eGS</title>
+<title>Connexion — eGS</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -160,43 +160,21 @@ footer.site a:hover{color:#fff;}
 
 <header class="pagehead">
   <div class="wrap">
-    <div class="eyebrow">Fonctionnalité — Inscription</div>
-    <h1>Créez votre <span>profil eGS</span></h1>
-    <p class="lead">Votre profil permet de recevoir des alertes personnalisées selon votre ville et de faciliter vos prises de rendez-vous.</p>
+    <div class="eyebrow">Connexion</div>
+    <h1>Accède à ton <span>profil eGS</span></h1>
+    <p class="lead">Connecte-toi pour retrouver tes alertes, tes rendez-vous et gérer ton profil.</p>
   </div>
 </header>
 
 <section class="bg-paper">
-  <div class="wrap two-col">
-    <form class="card" id="signup-form">
-      <div class="grid grid-2">
-        <div class="field"><label for="firstname">Prénom</label><input id="firstname" required /></div>
-        <div class="field"><label for="lastname">Nom</label><input id="lastname" required /></div>
-      </div>
+  <div class="wrap" style="max-width:480px;">
+    <form class="card" id="login-form">
       <div class="field"><label for="email">E-mail</label><input id="email" type="email" required /></div>
-      <div class="field"><label for="phone">Téléphone</label><input id="phone" type="tel" placeholder="+241 …" required /></div>
-      <div class="field">
-        <label for="city">Ville</label>
-        <select id="city" required>
-          <option value="">Sélectionner…</option>
-          <option>Libreville</option><option>Port-Gentil</option><option>Franceville</option><option>Oyem</option><option>Lambaréné</option>
-        </select>
-      </div>
-      <div class="field"><label for="password">Mot de passe</label><input id="password" type="password" minlength="8" required /></div>
-      <div class="field"><label for="password2">Confirmer le mot de passe</label><input id="password2" type="password" minlength="8" required /></div>
-      <div class="field">
-        <label><input type="checkbox" id="consent" style="width:auto;display:inline-block;margin-right:8px;" required />J'accepte de recevoir des alertes liées à ma zone.</label>
-      </div>
-      <button class="btn btn-primary btn-block" type="submit">Créer mon profil</button>
+      <div class="field"><label for="password">Mot de passe</label><input id="password" type="password" required /></div>
+      <button class="btn btn-primary btn-block" type="submit">Se connecter</button>
       <div class="form-msg" id="form-msg"></div>
-      <div class="local-note">🔒 Ton mot de passe est haché côté serveur (jamais stocké en clair). Au moins 8 caractères.</div>
+      <div class="local-note">Pas encore de compte ? <a href="inscription.html" style="color:var(--signal);font-weight:600;">Inscris-toi</a>.</div>
     </form>
-
-    <div class="card-dark">
-      <h3 style="font-size:17px;">Déjà inscrit ?</h3>
-      <p style="font-size:13.5px;color:var(--sky-dim);margin-top:10px;line-height:1.6;">Connecte-toi pour accéder à ton profil, tes abonnements aux alertes et tes rendez-vous.</p>
-      <a class="btn btn-ghost on-dark btn-block" style="margin-top:16px;" href="connexion.html">Se connecter</a>
-    </div>
   </div>
 </section>
 
@@ -208,42 +186,25 @@ footer.site a:hover{color:#fff;}
 const EGS_API = window.EGS_API_BASE || 'http://localhost:3001';
 const msg = document.getElementById('form-msg');
 
-document.getElementById('signup-form').addEventListener('submit', async e=>{
+document.getElementById('login-form').addEventListener('submit', async e=>{
   e.preventDefault();
-  const p = {
-    firstname: document.getElementById('firstname').value.trim(),
-    lastname: document.getElementById('lastname').value.trim(),
-    email: document.getElementById('email').value.trim(),
-    phone: document.getElementById('phone').value.trim(),
-    city: document.getElementById('city').value,
-    password: document.getElementById('password').value,
-  };
-  const password2 = document.getElementById('password2').value;
-  if(!p.firstname || !p.lastname || !p.email || !p.city || !p.password){
-    msg.className = 'form-msg show err';
-    msg.textContent = 'Merci de compléter tous les champs.';
-    return;
-  }
-  if(p.password !== password2){
-    msg.className = 'form-msg show err';
-    msg.textContent = 'Les deux mots de passe ne correspondent pas.';
-    return;
-  }
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
   try{
-    const res = await fetch(`${EGS_API}/api/inscriptions`, {
+    const res = await fetch(`${EGS_API}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(p),
+      body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || 'Erreur serveur');
     localStorage.setItem('egs_token', data.token);
     msg.className = 'form-msg show ok';
-    msg.textContent = `Profil créé pour ${p.firstname} ${p.lastname}. Redirection…`;
-    setTimeout(() => { window.location.href = 'profil.html'; }, 900);
+    msg.textContent = `Bienvenue, ${data.user.firstname} ! Redirection…`;
+    setTimeout(() => { window.location.href = 'profil.html'; }, 700);
   }catch(err){
     msg.className = 'form-msg show err';
-    msg.textContent = `Impossible de créer le profil : ${err.message}`;
+    msg.textContent = `Connexion impossible : ${err.message}`;
   }
 });
 </script>

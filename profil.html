@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <script src="assets/config.js"></script>
 <script src="assets/session.js" defer></script>
-<title>Inscription — eGS</title>
+<title>Mon profil — eGS</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -160,42 +160,34 @@ footer.site a:hover{color:#fff;}
 
 <header class="pagehead">
   <div class="wrap">
-    <div class="eyebrow">Fonctionnalité — Inscription</div>
-    <h1>Créez votre <span>profil eGS</span></h1>
-    <p class="lead">Votre profil permet de recevoir des alertes personnalisées selon votre ville et de faciliter vos prises de rendez-vous.</p>
+    <div class="eyebrow">Espace personnel</div>
+    <h1 id="profile-greeting">Ton <span>profil eGS</span></h1>
+    <p class="lead">Retrouve tes informations, tes abonnements aux alertes et tes rendez-vous.</p>
   </div>
 </header>
 
 <section class="bg-paper">
   <div class="wrap two-col">
-    <form class="card" id="signup-form">
-      <div class="grid grid-2">
-        <div class="field"><label for="firstname">Prénom</label><input id="firstname" required /></div>
-        <div class="field"><label for="lastname">Nom</label><input id="lastname" required /></div>
+    <div>
+      <div class="card" id="profile-card">
+        <h3 style="font-size:17px;">Mes informations</h3>
+        <div id="profile-info" style="margin-top:16px;font-size:14.5px;line-height:2;color:var(--ink-soft);">Chargement…</div>
+        <button class="btn btn-ghost btn-sm" id="logout-btn" style="margin-top:18px;">Se déconnecter</button>
       </div>
-      <div class="field"><label for="email">E-mail</label><input id="email" type="email" required /></div>
-      <div class="field"><label for="phone">Téléphone</label><input id="phone" type="tel" placeholder="+241 …" required /></div>
-      <div class="field">
-        <label for="city">Ville</label>
-        <select id="city" required>
-          <option value="">Sélectionner…</option>
-          <option>Libreville</option><option>Port-Gentil</option><option>Franceville</option><option>Oyem</option><option>Lambaréné</option>
-        </select>
-      </div>
-      <div class="field"><label for="password">Mot de passe</label><input id="password" type="password" minlength="8" required /></div>
-      <div class="field"><label for="password2">Confirmer le mot de passe</label><input id="password2" type="password" minlength="8" required /></div>
-      <div class="field">
-        <label><input type="checkbox" id="consent" style="width:auto;display:inline-block;margin-right:8px;" required />J'accepte de recevoir des alertes liées à ma zone.</label>
-      </div>
-      <button class="btn btn-primary btn-block" type="submit">Créer mon profil</button>
-      <div class="form-msg" id="form-msg"></div>
-      <div class="local-note">🔒 Ton mot de passe est haché côté serveur (jamais stocké en clair). Au moins 8 caractères.</div>
-    </form>
 
-    <div class="card-dark">
-      <h3 style="font-size:17px;">Déjà inscrit ?</h3>
-      <p style="font-size:13.5px;color:var(--sky-dim);margin-top:10px;line-height:1.6;">Connecte-toi pour accéder à ton profil, tes abonnements aux alertes et tes rendez-vous.</p>
-      <a class="btn btn-ghost on-dark btn-block" style="margin-top:16px;" href="connexion.html">Se connecter</a>
+      <div class="card" style="margin-top:24px;">
+        <h3 style="font-size:17px;">Mes abonnements aux alertes</h3>
+        <ul id="subs-list" style="margin-top:14px;"></ul>
+        <p id="subs-empty" style="font-size:13.5px;color:var(--ink-soft);margin-top:10px;display:none;">Aucun abonnement pour le moment.</p>
+        <a class="btn btn-ghost btn-sm" href="assistance.html" style="margin-top:14px;">Gérer mes alertes</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:17px;">Mes rendez-vous</h3>
+      <ul id="appts-list" style="margin-top:14px;"></ul>
+      <p id="appts-empty" style="font-size:13.5px;color:var(--ink-soft);margin-top:10px;display:none;">Aucun rendez-vous pour le moment.</p>
+      <a class="btn btn-ghost btn-sm" href="teleconsultation.html" style="margin-top:14px;">Prendre un rendez-vous</a>
     </div>
   </div>
 </section>
@@ -206,45 +198,65 @@ footer.site a:hover{color:#fff;}
 
 <script>
 const EGS_API = window.EGS_API_BASE || 'http://localhost:3001';
-const msg = document.getElementById('form-msg');
+const token = localStorage.getItem('egs_token');
 
-document.getElementById('signup-form').addEventListener('submit', async e=>{
-  e.preventDefault();
-  const p = {
-    firstname: document.getElementById('firstname').value.trim(),
-    lastname: document.getElementById('lastname').value.trim(),
-    email: document.getElementById('email').value.trim(),
-    phone: document.getElementById('phone').value.trim(),
-    city: document.getElementById('city').value,
-    password: document.getElementById('password').value,
-  };
-  const password2 = document.getElementById('password2').value;
-  if(!p.firstname || !p.lastname || !p.email || !p.city || !p.password){
-    msg.className = 'form-msg show err';
-    msg.textContent = 'Merci de compléter tous les champs.';
-    return;
+if (!token) {
+  window.location.href = 'connexion.html';
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(`${EGS_API}${path}`, {
+    ...opts,
+    headers: { ...(opts.headers || {}), 'Authorization': `Bearer ${token}` },
+  });
+  if (res.status === 401) {
+    localStorage.removeItem('egs_token');
+    window.location.href = 'connexion.html';
+    throw new Error('Session expirée');
   }
-  if(p.password !== password2){
-    msg.className = 'form-msg show err';
-    msg.textContent = 'Les deux mots de passe ne correspondent pas.';
-    return;
+  return res.json();
+}
+
+async function loadProfile() {
+  try {
+    const user = await api('/api/auth/me');
+    document.getElementById('profile-greeting').innerHTML = `Bonjour, <span>${user.firstname}</span>`;
+    document.getElementById('profile-info').innerHTML = `
+      <div><strong>${user.firstname} ${user.lastname}</strong></div>
+      <div>${user.email}</div>
+      <div>${user.phone}</div>
+      <div>${user.city_id}</div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-top:6px;">Membre depuis le ${new Date(user.created_at).toLocaleDateString('fr-FR')}</div>
+    `;
+
+    const subs = await api(`/api/abonnements?contact=${encodeURIComponent(user.email)}`);
+    const subsList = document.getElementById('subs-list');
+    const subsEmpty = document.getElementById('subs-empty');
+    subsList.innerHTML = subs.map(s => `
+      <li style="padding:10px 0;border-top:1px solid var(--paper-line);font-size:14px;">📍 ${s.city_id}</li>
+    `).join('');
+    subsEmpty.style.display = subs.length ? 'none' : 'block';
+
+    const appts = await api('/api/rendezvous/mine');
+    const apptsList = document.getElementById('appts-list');
+    const apptsEmpty = document.getElementById('appts-empty');
+    apptsList.innerHTML = appts.map(a => `
+      <li style="padding:10px 0;border-top:1px solid var(--paper-line);font-size:14px;">
+        <div style="font-weight:600;">${a.motif}</div>
+        <div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">${new Date(a.slot).toLocaleString('fr-FR')} · ${a.status}</div>
+      </li>
+    `).join('');
+    apptsEmpty.style.display = appts.length ? 'none' : 'block';
+  } catch (err) {
+    console.error(err);
   }
-  try{
-    const res = await fetch(`${EGS_API}/api/inscriptions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(p),
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || 'Erreur serveur');
-    localStorage.setItem('egs_token', data.token);
-    msg.className = 'form-msg show ok';
-    msg.textContent = `Profil créé pour ${p.firstname} ${p.lastname}. Redirection…`;
-    setTimeout(() => { window.location.href = 'profil.html'; }, 900);
-  }catch(err){
-    msg.className = 'form-msg show err';
-    msg.textContent = `Impossible de créer le profil : ${err.message}`;
-  }
+}
+loadProfile();
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  try { await api('/api/auth/logout', { method: 'POST' }); } catch (e) {}
+  localStorage.removeItem('egs_token');
+  window.location.href = 'index.html';
 });
 </script>
 </body>

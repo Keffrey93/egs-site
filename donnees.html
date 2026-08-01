@@ -160,11 +160,19 @@ footer.site a:hover{color:#fff;}
 
 <header class="pagehead">
   <div class="wrap">
-    <div class="eyebrow risk">Étude de cas — Paludisme</div>
+    <div class="eyebrow risk">10 maladies suivies</div>
     <h1>Ce que voient les satellites <span>avant l'épidémie</span></h1>
-    <p class="lead">Le paludisme se transmet par piqûre de moustique Anophèle, dont les gîtes larvaires dépendent de conditions observables depuis l'espace : eau stagnante, chaleur, humidité du sol.</p>
+    <p class="lead">Paludisme, dengue, choléra, méningite... de nombreuses maladies dépendent de conditions climatiques observables depuis l'espace : eau stagnante, chaleur, humidité, sécheresse. eGS calcule un indice par maladie et par ville.</p>
   </div>
 </header>
+
+<section class="bg-paper">
+  <div class="wrap">
+    <div class="eyebrow risk">Panorama</div>
+    <div class="section-head"><h2>Les maladies suivies par eGS</h2><p>Toutes partagent une sensibilité aux mêmes variables climatiques (température, humidité, précipitations), mais selon des logiques différentes.</p></div>
+    <div id="disease-overview"></div>
+  </div>
+</section>
 
 <section class="bg-paper">
   <div class="wrap">
@@ -174,13 +182,14 @@ footer.site a:hover{color:#fff;}
         <div class="section-head"><h2>NASA POWER</h2>
         <p>Les chiffres de ce site sont interrogés en direct sur l'API publique <strong>NASA POWER</strong> (Prediction Of Worldwide Energy Resources, NASA Langley Research Center), qui distribue des variables climatiques dérivées de réanalyses assimilant des observations satellitaires — sans clé d'accès requise.</p></div>
         <table>
-          <thead><tr><th>Variable</th><th>Code API</th><th>Usage épidémiologique</th></tr></thead>
+          <thead><tr><th>Variable</th><th>Code API</th><th>Usage épidémiologique (exemple : paludisme)</th></tr></thead>
           <tbody>
             <tr><td>Température à 2m</td><td class="mono">T2M</td><td>L'Anophèle se développe entre 20 et 30°C, optimum ≈ 27°C</td></tr>
             <tr><td>Humidité relative</td><td class="mono">RH2M</td><td>Une humidité élevée prolonge la survie du moustique adulte</td></tr>
             <tr><td>Précipitations</td><td class="mono">PRECTOTCORR</td><td>Favorise les points d'eau stagnante, gîtes larvaires</td></tr>
           </tbody>
         </table>
+        <p style="font-size:12.5px;color:var(--ink-soft);margin-top:10px;">Les 9 autres maladies suivies réutilisent les mêmes variables, avec des seuils et pondérations propres à leur mode de transmission (voir « Panorama » ci-dessus).</p>
       </div>
       <div class="card">
         <h3 style="font-size:17px;">Missions satellites mobilisables</h3>
@@ -198,7 +207,9 @@ footer.site a:hover{color:#fff;}
 <section class="bg-void">
   <div class="wrap">
     <div class="eyebrow risk">Explorateur</div>
-    <div class="section-head on-dark"><h2>Détail par ville</h2><p>Sélectionnez une ville pour voir ses données brutes des 14 derniers jours disponibles.</p></div>
+    <div class="section-head on-dark"><h2>Détail par ville</h2><p>Sélectionnez une maladie puis une ville pour voir l'indice calculé et les données brutes des 14 derniers jours disponibles.</p></div>
+    <div class="mono" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--sky-dim);margin-bottom:10px;">Maladie</div>
+    <div id="explorer-disease-tabs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;"></div>
     <div class="grid grid-5" id="city-tabs" style="margin-bottom:24px;"></div>
     <div class="card-dark" id="explorer-panel"></div>
   </div>
@@ -210,8 +221,8 @@ footer.site a:hover{color:#fff;}
     <div class="section-head"><h2>Comment l'indice de risque est calculé</h2></div>
     <div class="grid grid-3">
       <div class="card"><h3 style="font-size:15.5px;">1 — Moyennes 14 jours</h3><p style="font-size:13.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55;">Température, humidité et cumul de précipitations sont moyennés sur les 14 derniers jours disponibles (J-7 à J-20, en raison du délai de publication de NASA POWER).</p></div>
-      <div class="card"><h3 style="font-size:15.5px;">2 — Score par variable</h3><p style="font-size:13.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55;">Chaque variable est convertie en score 0-100 selon sa proximité avec les conditions favorables au vecteur (température proche de 27°C, humidité &gt; 60%, pluviométrie modérée).</p></div>
-      <div class="card"><h3 style="font-size:15.5px;">3 — Pondération</h3><p style="font-size:13.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55;">Score final = 40% température + 35% humidité + 25% précipitations. Un modèle volontairement simple, à but pédagogique et exploratoire.</p></div>
+      <div class="card"><h3 style="font-size:15.5px;">2 — Score par variable</h3><p style="font-size:13.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55;">Chaque variable est convertie en score 0-100 selon sa proximité avec les conditions favorables à la maladie sélectionnée : température optimale propre au vecteur, seuil d'humidité (haute pour les moustiques, basse pour la méningite), et profil de précipitations (modéré pour les gîtes larvaires, cumulatif pour les inondations qui contaminent l'eau).</p></div>
+      <div class="card"><h3 style="font-size:15.5px;">3 — Pondération</h3><p style="font-size:13.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55;">Chaque maladie a sa propre pondération. Exemple paludisme : 40% température + 35% humidité + 25% précipitations. Pour une maladie hydrique comme le choléra, les précipitations pèsent davantage (jusqu'à 70%). Modèles volontairement simples, à but pédagogique et exploratoire.</p></div>
     </div>
     <div class="disclaimer" style="margin-top:28px;max-width:none;">⚠️ Ce calcul est une estimation indicative construite pour ce projet. Il n'a pas été validé cliniquement et ne doit pas se substituer aux données officielles du Ministère de la Santé ou de l'OMS.</div>
   </div>
@@ -239,108 +250,58 @@ footer.site a:hover{color:#fff;}
   <div class="wrap"><p>© 2026 eGS — Team Gandalf</p><p>Données : NASA POWER API · OMS (World Malaria Report 2024)</p></div>
 </footer>
 
+<script src="assets/satellite.js"></script>
 <script>
-/*
-  eGS — Module de données satellite
-  Source : NASA POWER (Prediction Of Worldwide Energy Resources), NASA Langley Research Center.
-  API publique, gratuite, sans clé — https://power.larc.nasa.gov/docs/services/api/
-  Paramètres utilisés : T2M (température à 2m, °C), RH2M (humidité relative à 2m, %),
-  PRECTOTCORR (précipitations corrigées, mm/jour). Ces variables sont dérivées de
-  réanalyses assimilant des observations satellitaires (dont MODIS, CERES).
+function renderDiseaseOverview(){
+  const box = document.getElementById('disease-overview');
+  const byCategory = {};
+  eGS.DISEASES.forEach(d => { (byCategory[d.category] = byCategory[d.category] || []).push(d); });
+  box.innerHTML = Object.keys(byCategory).map(cat => `
+    <div style="margin-bottom:26px;">
+      <div class="eyebrow" style="margin-bottom:12px;">${eGS.DISEASE_CATEGORY_LABELS[cat]}</div>
+      <div class="grid grid-3">
+        ${byCategory[cat].map(d => `
+          <div class="card">
+            <h3 style="font-size:15.5px;">${d.name}</h3>
+            <p style="font-size:12.5px;color:var(--ink-soft);margin-top:6px;">${d.vector}</p>
+            <p style="font-size:13px;color:var(--ink-soft);margin-top:8px;line-height:1.5;">${d.short}</p>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+renderDiseaseOverview();
 
-  eGS.CITIES : villes gabonaises suivies, avec coordonnées.
-  eGS.fetchCityClimate(city) : renvoie les 14 derniers jours disponibles.
-  eGS.riskIndex(data) : indice de risque paludisme simplifié (0-100), à visée pédagogique.
-*/
-window.eGS = window.eGS || {};
+let explorerDisease = eGS.DISEASES[0].id;
 
-eGS.CITIES = [
-  { id:'libreville',  name:'Libreville',province:'Estuaire',    lat:0.3901, lon:9.4544 },
-  { id:'port-gentil', name:'Port-Gentil',province:'Ogooué-Maritime',lat:-0.7193,lon:8.7815 },
-  { id:'franceville', name:'Franceville',province:'Haut-Ogooué', lat:-1.6333,lon:13.5833 },
-  { id:'oyem',        name:'Oyem',      province:'Woleu-Ntem',  lat:1.6,    lon:11.5667 },
-  { id:'lambarene',   name:'Lambaréné', province:'Moyen-Ogooué',lat:-0.7,   lon:10.2167 },
-  { id:'mouila',      name:'Mouila',    province:'Ngounié',     lat:-1.8685,lon:11.0559 },
-  { id:'tchibanga',   name:'Tchibanga', province:'Nyanga',      lat:-2.9333,lon:11.0 },
-  { id:'makokou',     name:'Makokou',   province:'Ogooué-Ivindo',lat:0.5667, lon:12.8667 },
-  { id:'koulamoutou', name:'Koulamoutou',province:'Ogooué-Lolo', lat:-1.1333,lon:12.4833 },
-];
-
-function fmtDate(d){
-  return d.toISOString().slice(0,10).replace(/-/g,'');
+function renderExplorerDiseaseTabs(onChange){
+  const tabs = document.getElementById('explorer-disease-tabs');
+  tabs.innerHTML = eGS.DISEASES.map(d => `<button class="btn btn-sm ${d.id===explorerDisease?'btn-primary':'btn-ghost on-dark'}" data-disease="${d.id}" title="${d.short}">${d.name}</button>`).join('');
+  tabs.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    explorerDisease = b.dataset.disease;
+    renderExplorerDiseaseTabs(onChange);
+    onChange();
+  }));
 }
 
-// NASA POWER a un décalage de publication de quelques jours : on vise J-7 à J-20.
-function dateRange(){
-  const end = new Date(); end.setUTCDate(end.getUTCDate() - 7);
-  const start = new Date(end); start.setUTCDate(start.getUTCDate() - 13);
-  return { start: fmtDate(start), end: fmtDate(end) };
-}
-
-eGS.fetchCityClimate = async function(city){
-  const { start, end } = dateRange();
-  const url = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,RH2M,PRECTOTCORR&community=AG&longitude=${city.lon}&latitude=${city.lat}&start=${start}&end=${end}&format=JSON`;
-  const res = await fetch(url);
-  if(!res.ok) throw new Error('NASA POWER API — réponse ' + res.status);
-  const json = await res.json();
-  const p = json.properties.parameter;
-  const days = Object.keys(p.T2M).sort();
-  const series = days.map(d => ({
-    date: d,
-    temp: p.T2M[d],
-    humidity: p.RH2M[d],
-    precip: p.PRECTOTCORR[d],
-  })).filter(d => d.temp > -900 && d.humidity > -900 && d.precip > -900); // POWER renvoie -999 si absent
-  return series;
-};
-
-// Indice de risque simplifié (0-100) — PAS un outil de diagnostic médical.
-// Logique : l'Anophèle se reproduit préférentiellement entre 20-30°C (optimum ~27°C),
-// avec une humidité relative élevée (>60%) et une pluviométrie modérée (points d'eau
-// stagnante sans être lessivés par des pluies extrêmes).
-eGS.riskIndex = function(series){
-  if(!series.length) return null;
-  const avg = key => series.reduce((s,d)=>s+d[key],0) / series.length;
-  const temp = avg('temp');
-  const humidity = avg('humidity');
-  const precipTotal = series.reduce((s,d)=>s+d.precip,0);
-
-  const tempScore = Math.max(0, 100 - Math.abs(temp - 27) * 9);
-  const humScore = Math.min(100, Math.max(0, (humidity - 40) * (100/50)));
-  const precipScore = precipTotal <= 2 ? precipTotal * 15
-                     : precipTotal <= 40 ? 30 + (precipTotal-2)*1.6
-                     : Math.max(20, 100 - (precipTotal-40)*1.2);
-
-  const score = Math.round(tempScore*0.4 + humScore*0.35 + Math.min(100,precipScore)*0.25);
-  return { score: Math.max(0, Math.min(100, score)), temp, humidity, precipTotal };
-};
-
-eGS.riskLabel = function(score){
-  if(score === null) return { label:'Indisponible', cls:'mid' };
-  if(score >= 66) return { label:'Risque élevé', cls:'high' };
-  if(score >= 40) return { label:'Risque modéré', cls:'mid' };
-  return { label:'Risque faible', cls:'low' };
-};
-
-</script>
-<script>
 async function renderExplorer(){
   const tabs = document.getElementById('city-tabs');
   const panel = document.getElementById('explorer-panel');
   tabs.innerHTML = eGS.CITIES.map((c,i)=>`<button class="btn ${i===0?'btn-primary':'btn-ghost on-dark'} btn-block" data-city="${c.id}" title="Province : ${c.province}">${c.name}</button>`).join('');
   panel.innerHTML = '<div class="skel" style="height:180px;"></div>';
 
-  const cache = {};
-  async function load(id){
+  const cache = {}; // séries climatiques par ville (réutilisables entre maladies)
+  let activeCity = eGS.CITIES[0].id;
+
+  async function loadSeries(id){
     if(cache[id]) return cache[id];
     const city = eGS.CITIES.find(c=>c.id===id);
     const series = await eGS.fetchCityClimate(city);
-    const risk = eGS.riskIndex(series);
-    cache[id] = { city, series, risk };
+    cache[id] = { city, series };
     return cache[id];
   }
 
   async function show(id){
+    activeCity = id;
     tabs.querySelectorAll('button').forEach(b=>{
       const active = b.dataset.city===id;
       b.classList.toggle('btn-primary', active);
@@ -349,13 +310,16 @@ async function renderExplorer(){
     });
     panel.innerHTML = '<div class="skel" style="height:180px;"></div>';
     try{
-      const { city, series, risk } = await load(id);
+      const { city, series } = await loadSeries(id);
+      const disease = eGS.getDisease(explorerDisease);
+      const risk = eGS.riskIndexFor(explorerDisease, series);
       const lbl = eGS.riskLabel(risk.score);
       const rows = series.map(d=>`<tr><td class="mono">${d.date}</td><td>${d.temp.toFixed(1)} °C</td><td>${d.humidity.toFixed(0)} %</td><td>${d.precip.toFixed(1)} mm</td></tr>`).join('');
       panel.innerHTML = `
-        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:baseline;margin-bottom:18px;">
-          <h3 style="font-size:19px;color:#fff;">${city.name} — indice ${risk.score}/100 <span class="badge ${lbl.cls}">${lbl.label}</span></h3>
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:baseline;margin-bottom:6px;">
+          <h3 style="font-size:19px;color:#fff;">${city.name} — ${disease.name} — indice ${risk.score}/100 <span class="badge ${lbl.cls}">${lbl.label}</span></h3>
         </div>
+        <p style="font-size:12.5px;color:var(--sky-dim);margin-bottom:18px;">${disease.vector} — ${disease.short}</p>
         <table style="color:var(--sky-dim);">
           <thead><tr><th style="color:var(--sky-dim);">Date</th><th style="color:var(--sky-dim);">Température</th><th style="color:var(--sky-dim);">Humidité</th><th style="color:var(--sky-dim);">Précipitations</th></tr></thead>
           <tbody style="color:#fff;">${rows}</tbody>
@@ -365,6 +329,7 @@ async function renderExplorer(){
     }
   }
 
+  renderExplorerDiseaseTabs(() => show(activeCity));
   tabs.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>show(b.dataset.city)));
   show(eGS.CITIES[0].id);
 }

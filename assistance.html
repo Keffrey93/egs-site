@@ -162,13 +162,17 @@ footer.site a:hover{color:#fff;}
   <div class="wrap">
     <div class="eyebrow risk">Fonctionnalité — Télé-assistance</div>
     <h1>Soyez alerté quand le <span>risque augmente</span></h1>
-    <p class="lead">Abonnez-vous à une ville : nous vérifions son indice de risque à partir des données NASA POWER et vous alertons s'il devient élevé.</p>
+    <p class="lead">Abonnez-vous à une ville et une maladie : nous vérifions l'indice de risque à partir des données NASA POWER et vous alertons s'il devient élevé.</p>
   </div>
 </header>
 
 <section class="bg-paper">
   <div class="wrap two-col">
     <form class="card" id="sub-form">
+      <div class="field">
+        <label for="sub-disease">Maladie à surveiller</label>
+        <select id="sub-disease" required></select>
+      </div>
       <div class="field">
         <label for="sub-city">Ville à surveiller</label>
         <select id="sub-city" required>
@@ -182,7 +186,9 @@ footer.site a:hover{color:#fff;}
 
     <div class="card-dark">
       <h3 style="font-size:17px;">État actuel des villes surveillées</h3>
-      <ul id="status-list" style="margin-top:16px;"></ul>
+      <div class="mono" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--sky-dim);margin-top:16px;margin-bottom:8px;">Maladie affichée</div>
+      <div id="status-disease-tabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+      <ul id="status-list" style="margin-top:8px;"></ul>
     </div>
   </div>
 </section>
@@ -200,104 +206,37 @@ footer.site a:hover{color:#fff;}
   <div class="wrap"><p>© 2026 eGS — Team Gandalf</p><p>Données : NASA POWER API</p></div>
 </footer>
 
+<script src="assets/satellite.js"></script>
 <script>
-/*
-  eGS — Module de données satellite
-  Source : NASA POWER (Prediction Of Worldwide Energy Resources), NASA Langley Research Center.
-  API publique, gratuite, sans clé — https://power.larc.nasa.gov/docs/services/api/
-  Paramètres utilisés : T2M (température à 2m, °C), RH2M (humidité relative à 2m, %),
-  PRECTOTCORR (précipitations corrigées, mm/jour). Ces variables sont dérivées de
-  réanalyses assimilant des observations satellitaires (dont MODIS, CERES).
+const diseaseSelect = document.getElementById('sub-disease');
+eGS.DISEASES.forEach(d => diseaseSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`);
 
-  eGS.CITIES : villes gabonaises suivies, avec coordonnées.
-  eGS.fetchCityClimate(city) : renvoie les 14 derniers jours disponibles.
-  eGS.riskIndex(data) : indice de risque paludisme simplifié (0-100), à visée pédagogique.
-*/
-window.eGS = window.eGS || {};
-
-eGS.CITIES = [
-  { id:'libreville',  name:'Libreville',province:'Estuaire',    lat:0.3901, lon:9.4544 },
-  { id:'port-gentil', name:'Port-Gentil',province:'Ogooué-Maritime',lat:-0.7193,lon:8.7815 },
-  { id:'franceville', name:'Franceville',province:'Haut-Ogooué', lat:-1.6333,lon:13.5833 },
-  { id:'oyem',        name:'Oyem',      province:'Woleu-Ntem',  lat:1.6,    lon:11.5667 },
-  { id:'lambarene',   name:'Lambaréné', province:'Moyen-Ogooué',lat:-0.7,   lon:10.2167 },
-  { id:'mouila',      name:'Mouila',    province:'Ngounié',     lat:-1.8685,lon:11.0559 },
-  { id:'tchibanga',   name:'Tchibanga', province:'Nyanga',      lat:-2.9333,lon:11.0 },
-  { id:'makokou',     name:'Makokou',   province:'Ogooué-Ivindo',lat:0.5667, lon:12.8667 },
-  { id:'koulamoutou', name:'Koulamoutou',province:'Ogooué-Lolo', lat:-1.1333,lon:12.4833 },
-];
-
-function fmtDate(d){
-  return d.toISOString().slice(0,10).replace(/-/g,'');
-}
-
-// NASA POWER a un décalage de publication de quelques jours : on vise J-7 à J-20.
-function dateRange(){
-  const end = new Date(); end.setUTCDate(end.getUTCDate() - 7);
-  const start = new Date(end); start.setUTCDate(start.getUTCDate() - 13);
-  return { start: fmtDate(start), end: fmtDate(end) };
-}
-
-eGS.fetchCityClimate = async function(city){
-  const { start, end } = dateRange();
-  const url = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,RH2M,PRECTOTCORR&community=AG&longitude=${city.lon}&latitude=${city.lat}&start=${start}&end=${end}&format=JSON`;
-  const res = await fetch(url);
-  if(!res.ok) throw new Error('NASA POWER API — réponse ' + res.status);
-  const json = await res.json();
-  const p = json.properties.parameter;
-  const days = Object.keys(p.T2M).sort();
-  const series = days.map(d => ({
-    date: d,
-    temp: p.T2M[d],
-    humidity: p.RH2M[d],
-    precip: p.PRECTOTCORR[d],
-  })).filter(d => d.temp > -900 && d.humidity > -900 && d.precip > -900); // POWER renvoie -999 si absent
-  return series;
-};
-
-// Indice de risque simplifié (0-100) — PAS un outil de diagnostic médical.
-// Logique : l'Anophèle se reproduit préférentiellement entre 20-30°C (optimum ~27°C),
-// avec une humidité relative élevée (>60%) et une pluviométrie modérée (points d'eau
-// stagnante sans être lessivés par des pluies extrêmes).
-eGS.riskIndex = function(series){
-  if(!series.length) return null;
-  const avg = key => series.reduce((s,d)=>s+d[key],0) / series.length;
-  const temp = avg('temp');
-  const humidity = avg('humidity');
-  const precipTotal = series.reduce((s,d)=>s+d.precip,0);
-
-  const tempScore = Math.max(0, 100 - Math.abs(temp - 27) * 9);
-  const humScore = Math.min(100, Math.max(0, (humidity - 40) * (100/50)));
-  const precipScore = precipTotal <= 2 ? precipTotal * 15
-                     : precipTotal <= 40 ? 30 + (precipTotal-2)*1.6
-                     : Math.max(20, 100 - (precipTotal-40)*1.2);
-
-  const score = Math.round(tempScore*0.4 + humScore*0.35 + Math.min(100,precipScore)*0.25);
-  return { score: Math.max(0, Math.min(100, score)), temp, humidity, precipTotal };
-};
-
-eGS.riskLabel = function(score){
-  if(score === null) return { label:'Indisponible', cls:'mid' };
-  if(score >= 66) return { label:'Risque élevé', cls:'high' };
-  if(score >= 40) return { label:'Risque modéré', cls:'mid' };
-  return { label:'Risque faible', cls:'low' };
-};
-
-</script>
-<script>
 const select = document.getElementById('sub-city');
 eGS.CITIES.forEach(c => select.innerHTML += `<option value="${c.id}">${c.name} — ${c.province}</option>`);
+
+const statusDiseaseTabs = document.getElementById('status-disease-tabs');
+let statusDisease = eGS.DISEASES[0].id;
+function renderStatusDiseaseTabs(){
+  statusDiseaseTabs.innerHTML = eGS.DISEASES.map(d => `<button class="btn btn-sm ${d.id===statusDisease?'btn-primary':'btn-ghost on-dark'}" data-disease="${d.id}">${d.name}</button>`).join('');
+  statusDiseaseTabs.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    statusDisease = b.dataset.disease;
+    renderStatusDiseaseTabs();
+    loadStatuses();
+  }));
+}
 
 const statusList = document.getElementById('status-list');
 const mySubs = document.getElementById('my-subs');
 const mySubsEmpty = document.getElementById('my-subs-empty');
 const EGS_API = window.EGS_API_BASE || 'http://localhost:3001';
 let subscriptions = [];
+const climateCache = {}; // séries climatiques par ville, réutilisées entre maladies
 
 function renderSubs(){
   mySubs.innerHTML = subscriptions.map(s => {
     const city = eGS.CITIES.find(c => c.id === s.city_id) || { name: s.city_id };
-    return `<li style="padding:12px 0;border-top:1px solid var(--panel-line);display:flex;justify-content:space-between;color:#fff;"><span>${city.name} — ${s.contact}</span><span class="badge">abonné</span></li>`;
+    const disease = eGS.getDisease(s.disease_id || 'paludisme');
+    return `<li style="padding:12px 0;border-top:1px solid var(--panel-line);display:flex;justify-content:space-between;color:#fff;"><span>${city.name} — ${disease.name} — ${s.contact}</span><span class="badge">abonné</span></li>`;
   }).join('');
   mySubsEmpty.style.display = subscriptions.length ? 'none' : 'block';
 }
@@ -306,8 +245,8 @@ async function loadStatuses(){
   statusList.innerHTML = eGS.CITIES.map(c => `<li id="status-${c.id}" style="padding:12px 0;border-top:1px solid var(--panel-line);display:flex;justify-content:space-between;align-items:center;"><span>${c.name}<span style="display:block;font-size:11px;color:var(--ink-soft);">${c.province}</span></span><span class="skel" style="width:70px;height:16px;"></span></li>`).join('');
   for(const city of eGS.CITIES){
     try{
-      const series = await eGS.fetchCityClimate(city);
-      const risk = eGS.riskIndex(series);
+      const series = climateCache[city.id] || (climateCache[city.id] = await eGS.fetchCityClimate(city));
+      const risk = eGS.riskIndexFor(statusDisease, series);
       const lbl = eGS.riskLabel(risk.score);
       document.getElementById('status-'+city.id).innerHTML = `<span>${city.name}<span style="display:block;font-size:11px;color:var(--ink-soft);">${city.province}</span></span><span class="badge ${lbl.cls}">${lbl.label} · ${risk.score}</span>`;
     }catch(e){
@@ -315,33 +254,36 @@ async function loadStatuses(){
     }
   }
 }
+renderStatusDiseaseTabs();
 loadStatuses();
 
 document.getElementById('sub-form').addEventListener('submit', async e=>{
   e.preventDefault();
   const msg = document.getElementById('sub-msg');
   const cityId = select.value;
+  const diseaseId = diseaseSelect.value;
   const contact = document.getElementById('sub-contact').value.trim();
-  if(!cityId || !contact){
-    msg.className='form-msg show err'; msg.textContent='Merci de sélectionner une ville et un moyen de contact.'; return;
+  if(!cityId || !diseaseId || !contact){
+    msg.className='form-msg show err'; msg.textContent='Merci de sélectionner une maladie, une ville et un moyen de contact.'; return;
   }
   const city = eGS.CITIES.find(c=>c.id===cityId);
+  const disease = eGS.getDisease(diseaseId);
   msg.className='form-msg show ok'; msg.textContent='Vérification du niveau de risque en cours…';
   try{
-    const series = await eGS.fetchCityClimate(city);
-    const risk = eGS.riskIndex(series);
+    const series = climateCache[cityId] || (climateCache[cityId] = await eGS.fetchCityClimate(city));
+    const risk = eGS.riskIndexFor(diseaseId, series);
     const lbl = eGS.riskLabel(risk.score);
 
     const res = await fetch(`${EGS_API}/api/abonnements`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ city: cityId, contact }),
+      body: JSON.stringify({ city: cityId, disease: diseaseId, contact }),
     });
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || 'Erreur serveur');
 
     subscriptions.unshift(data);
-    msg.textContent = `Abonné(e) à ${city.name}. Indice actuel : ${risk.score}/100 (${lbl.label}). Abonnement enregistré dans la base eGS.`;
+    msg.textContent = `Abonné(e) à ${city.name} pour ${disease.name}. Indice actuel : ${risk.score}/100 (${lbl.label}). Abonnement enregistré dans la base eGS.`;
     renderSubs();
     e.target.reset();
   }catch(err){

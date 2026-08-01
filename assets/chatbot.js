@@ -94,6 +94,12 @@
           'forte fievre','tres malade','je vais mal','au secours','ca s aggrave'],
       a:"⚠️ En cas de signes graves (forte fièvre, confusion, convulsions), rendez-vous immédiatement au centre de santé le plus proche ou appelez les secours. Cet assistant ne remplace pas un avis médical." },
 
+    { id:'autres-maladies', weight:2,
+      kw:['dengue','chikungunya','zika','fievre jaune','cholera','typhoide','diarrhee',
+          'meningite','trypanosomiase','maladie du sommeil','autres maladies','quelles maladies',
+          'maladies suivies','tse tse'],
+      a:"eGS suit désormais 10 maladies climato-sensibles au Gabon : paludisme, dengue, chikungunya, zika et fièvre jaune (moustiques), choléra, fièvre typhoïde et diarrhées infectieuses (liées à l'eau et aux inondations), ainsi que la méningite à méningocoque et la trypanosomiase (lien climatique plus indirect). Chacune a son propre indice de risque, calculé à partir des mêmes données climatiques NASA POWER. Consultez la page « Données satellite » pour choisir une maladie et une ville." },
+
     { id:'grossesse', weight:2,
       kw:['grossesse','enceinte','femme enceinte','bebe','nourrisson','allaitement',
           'enfant','nouveau ne','pediatrique','mon fils','ma fille'],
@@ -124,19 +130,19 @@
       kw:['zone a risque','quelle ville','ou se trouve le risque','carte des risques',
           'region a risque','niveau de risque','ville risquee','ou est le risque',
           'quelles sont les zones','villes surveillees'],
-      a:"Consultez la page « Données satellite » : elle affiche un indice de risque par ville, calculé à partir de données climatiques réelles (température, humidité, précipitations)." },
+      a:"Consultez la page « Données satellite » : elle affiche, pour chacune des 10 maladies suivies, un indice de risque par ville, calculé à partir de données climatiques réelles (température, humidité, précipitations)." },
 
     { id:'calcul-indice', weight:1,
       kw:['comment est calcule','comment ca marche l indice','calcul de l indice',
           'methode de calcul','pondere','ponderation','score par variable',
           'comment vous calculez','nasa power','14 jours','indice de risque'],
-      a:"L'indice combine les 14 derniers jours de données climatiques (température, humidité, précipitations) issues de l'API NASA POWER. Chaque variable obtient un score selon sa proximité avec les conditions favorables au moustique vecteur, puis les scores sont pondérés (40% température, 35% humidité, 25% précipitations) — un modèle simple, à but pédagogique." },
+      a:"L'indice combine les 14 derniers jours de données climatiques (température, humidité, précipitations) issues de l'API NASA POWER. Chaque variable obtient un score selon sa proximité avec les conditions favorables à la maladie sélectionnée, puis les scores sont pondérés différemment par maladie (ex. le paludisme pondère surtout température et humidité, le choléra pondère surtout les précipitations) — un modèle simple, à but pédagogique." },
 
     { id:'technologie', weight:1,
       kw:['satellite','sentinel','landsat','smos','galileo','geolocalisation',
           'intelligence artificielle',' ia ','comment fonctionne egs','comment marche egs',
           'technologie','donnees satellitaires','c est quoi egs','koi egs','quoi egs'],
-      a:"eGS croise des données climatiques satellitaires (Sentinel-2, Landsat, SMOS), la géolocalisation Galileo et l'intelligence artificielle pour estimer, ville par ville, le niveau de risque de paludisme au Gabon." },
+      a:"eGS croise des données climatiques satellitaires (Sentinel-2, Landsat, SMOS), la géolocalisation Galileo et l'intelligence artificielle pour estimer, ville par ville, le niveau de risque de 10 maladies climato-sensibles au Gabon, dont le paludisme." },
 
     { id:'consultation', weight:1,
       kw:['consultation','teleconsultation','medecin','rendez vous','rdv','docteur',
@@ -152,7 +158,7 @@
     { id:'alertes', weight:1,
       kw:['alerte','notification','abonnement','abonn','s abonner','etre alerte',
           'etre prevenu','suivre une ville'],
-      a:"La page « Assistance » vous permet de vous abonner aux alertes d'une ville : eGS vérifie son indice de risque à partir des données NASA POWER et vous prévient s'il devient élevé." },
+      a:"La page « Assistance » vous permet de vous abonner aux alertes d'une ville pour la maladie de votre choix : eGS vérifie son indice de risque à partir des données NASA POWER et vous prévient s'il devient élevé." },
 
     { id:'confidentialite', weight:1,
       kw:['confidentialite','donnees personnelles','vie privee','securite des donnees',

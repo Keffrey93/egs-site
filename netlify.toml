@@ -1,10 +1,6 @@
-# Site statique (HTML/CSS/JS) servi directement depuis la racine du dépôt.
-# Pas de build : les fichiers .html sont déjà prêts à être servis tels quels.
 [build]
   publish = "."
 
-# Le dossier server/ contient le code du backend (déployé séparément sur Render),
-# pas du contenu à servir par Netlify — on l'exclut de la publication.
 [[redirects]]
   from = "/server/*"
   to = "/404.html"
