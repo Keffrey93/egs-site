@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Équipe &amp; modèle économique — eGS</title>
+<script src="assets/config.js"></script>
+<script src="assets/session.js" defer></script>
+<title>Équipe — eGS</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -150,8 +152,9 @@ footer.site a:hover{color:#fff;}
       <li><a href="teleconsultation.html">Téléconsultation</a></li>
       <li><a href="assistance.html">Alertes</a></li>
       <li><a href="equipe.html" class="active">Équipe</a></li>
+      <li id="nav-login-item" style="display:none;"><a href="connexion.html">Connexion</a></li>
     </ul>
-    <a class="nav-cta" href="inscription.html">S'inscrire</a>
+    <a class="nav-cta" id="nav-cta" href="inscription.html">S'inscrire</a>
   </div>
 </nav>
 
@@ -190,45 +193,6 @@ footer.site a:hover{color:#fff;}
         <h3 style="font-size:16px;">Elie Nzenguet</h3>
         <div class="mono" style="font-size:11px;color:var(--signal);margin-top:6px;">Designer</div>
         <p style="font-size:12.5px;color:var(--sky-dim);margin-top:12px;line-height:1.55;">Étudiant en métiers du multimédia et de l'internet.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="bg-paper">
-  <div class="wrap">
-    <div class="eyebrow">Business Model Canvas</div>
-    <div class="section-head"><h2>Le modèle économique</h2><p>Coût de structure estimé à 150 315 € pour amener eGS de l'idée au service opérationnel.</p></div>
-    <div class="grid grid-3">
-      <div class="card">
-        <h4 class="mono" style="font-size:11px;text-transform:uppercase;color:var(--ink-soft);">Partenaires clés</h4>
-        <ul style="margin-top:10px;font-size:13.5px;line-height:1.9;">
-          <li>AGEOS, CNES, ESA</li><li>Ministères Santé / Eaux &amp; Forêts / Intérieur</li><li>Opérateurs mobiles (Moov, Airtel)</li><li>Assurances santé, bailleurs de fonds</li>
-        </ul>
-      </div>
-      <div class="card">
-        <h4 class="mono" style="font-size:11px;text-transform:uppercase;color:var(--ink-soft);">Proposition de valeur</h4>
-        <ul style="margin-top:10px;font-size:13.5px;line-height:1.9;">
-          <li>IA prédictive et aide à la décision</li><li>Conseil et télémédecine géolocalisés</li><li>Alerte et prévention des zones à risque</li>
-        </ul>
-      </div>
-      <div class="card">
-        <h4 class="mono" style="font-size:11px;text-transform:uppercase;color:var(--ink-soft);">Segments clients</h4>
-        <ul style="margin-top:10px;font-size:13.5px;line-height:1.9;">
-          <li>Ministères et État</li><li>Services médicaux (dispensaires, CHU)</li><li>Population, touristes, entreprises, étudiants</li>
-        </ul>
-      </div>
-      <div class="card">
-        <h4 class="mono" style="font-size:11px;text-transform:uppercase;color:var(--ink-soft);">Relation client</h4>
-        <ul style="margin-top:10px;font-size:13.5px;line-height:1.9;"><li>Newsletter, interaction directe, sondages, blog, FAQ</li></ul>
-      </div>
-      <div class="card">
-        <h4 class="mono" style="font-size:11px;text-transform:uppercase;color:var(--ink-soft);">Canaux</h4>
-        <ul style="margin-top:10px;font-size:13.5px;line-height:1.9;"><li>Site web, Play/App Store, réseaux sociaux, prospection</li></ul>
-      </div>
-      <div class="card">
-        <h4 class="mono" style="font-size:11px;text-transform:uppercase;color:var(--ink-soft);">Revenus</h4>
-        <ul style="margin-top:10px;font-size:13.5px;line-height:1.9;"><li>Application gratuite, monétisée à terme</li><li>Vente aux institutions (recherche, universités)</li></ul>
       </div>
     </div>
   </div>
