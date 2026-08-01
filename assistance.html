@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="assets/config.js"></script>
+<script src="assets/session.js" defer></script>
 <title>Alertes &amp; assistance — eGS</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
@@ -150,8 +152,9 @@ footer.site a:hover{color:#fff;}
       <li><a href="teleconsultation.html">Téléconsultation</a></li>
       <li><a href="assistance.html" class="active">Alertes</a></li>
       <li><a href="equipe.html">Équipe</a></li>
+      <li id="nav-login-item" style="display:none;"><a href="connexion.html">Connexion</a></li>
     </ul>
-    <a class="nav-cta" href="inscription.html">S'inscrire</a>
+    <a class="nav-cta" id="nav-cta" href="inscription.html">S'inscrire</a>
   </div>
 </nav>
 
@@ -175,7 +178,6 @@ footer.site a:hover{color:#fff;}
       <div class="field"><label for="sub-contact">E-mail ou téléphone pour l'alerte</label><input id="sub-contact" required /></div>
       <button class="btn btn-primary btn-block" type="submit">S'abonner aux alertes</button>
       <div class="form-msg" id="sub-msg"></div>
-      <div class="local-note">ℹ️ L'abonnement est enregistré dans la base eGS (voir /server) et vérifié contre les données climatiques réelles du moment. La notification récurrente automatique n'est pas encore active — c'est la prochaine étape (tâche planifiée côté serveur).</div>
     </form>
 
     <div class="card-dark">
