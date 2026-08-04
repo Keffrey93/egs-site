@@ -35,10 +35,9 @@ function looksLikeEmail(contact) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
 }
 
-async function sendAlertEmail(to, { cityName, diseaseName, score, label }) {
-  const disease = diseaseName || 'paludisme';
-  const subject = `eGS — Risque ${label.toLowerCase()} (${disease}) à ${cityName} (${score}/100)`;
-  const text = `Bonjour,\n\nL'indice de risque ${disease} calculé pour ${cityName} est maintenant de ${score}/100 (${label}).\nCet indice est une estimation pédagogique basée sur les données climatiques NASA POWER, pas un diagnostic médical.\n\nRetrouvez le détail et des conseils de prévention sur la page « Alertes » du site eGS.\n\n— eGS`;
+async function sendAlertEmail(to, { cityName, score, label }) {
+  const subject = `eGS — Risque ${label.toLowerCase()} à ${cityName} (${score}/100)`;
+  const text = `Bonjour,\n\nL'indice de risque calculé pour ${cityName} est maintenant de ${score}/100 (${label}).\nCet indice est une estimation pédagogique basée sur les données climatiques NASA POWER, pas un diagnostic médical.\n\nRetrouvez le détail et des conseils de prévention sur la page « Alertes » du site eGS.\n\n— eGS`;
 
   const t = getTransporter();
   if (!t) {

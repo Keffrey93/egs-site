@@ -1,13 +1,12 @@
 /*
-  eGS — Vérifie l'indice de risque de chaque ville suivie, pour chaque maladie
-  du registre, et notifie les abonnés concernés si le risque est élevé. Conçu
-  pour être appelé périodiquement (voir server.js : tâche planifiée interne +
-  endpoint /api/tasks/check-alertes déclenchable par un cron externe, ex.
-  Render Cron Job).
+  eGS — Vérifie l'indice de risque de chaque ville, pour chaque maladie suivie,
+  et notifie les abonnés concernés si le risque est élevé. Conçu pour être
+  appelé périodiquement (endpoint /api/tasks/check-alertes, déclenché par le
+  GitHub Action planifié).
 */
 'use strict';
 const { db } = require('../db.js');
-const { CITIES, DISEASES, fetchCityClimate, diseaseRiskIndex } = require('./climate.js');
+const { CITIES, DISEASES, fetchCityClimate, computeAllRisks } = require('./climate.js');
 const { sendAlertEmail, looksLikeEmail } = require('./mailer.js');
 
 const HIGH_RISK_THRESHOLD = 66;
@@ -24,34 +23,37 @@ async function checkAndNotify() {
   const results = [];
 
   for (const city of CITIES) {
-    let series;
+    let all;
     try {
-      series = await fetchCityClimate(city);
+      const series = await fetchCityClimate(city);
+      all = computeAllRisks(series);
     } catch (e) {
       results.push({ city: city.id, error: e.message });
       continue;
     }
+    if (!all) {
+      results.push({ city: city.id, error: 'Aucune donnée climatique disponible' });
+      continue;
+    }
 
-    for (const disease of DISEASES) {
-      const risk = diseaseRiskIndex(disease.id, series);
+    for (const diseaseId of Object.keys(DISEASES)) {
+      const risk = all.diseases[diseaseId];
 
-      if (!risk || risk.score < HIGH_RISK_THRESHOLD) {
-        results.push({ city: city.id, disease: disease.id, score: risk ? risk.score : null, notified: false, reason: 'risque non élevé' });
+      if (risk.score < HIGH_RISK_THRESHOLD) {
+        results.push({ city: city.id, disease: diseaseId, score: risk.score, notified: false, reason: 'risque non élevé' });
+        continue;
+      }
+      if (recentlyNotified(city.id, diseaseId)) {
+        results.push({ city: city.id, disease: diseaseId, score: risk.score, notified: false, reason: 'déjà notifié récemment' });
         continue;
       }
 
-      if (recentlyNotified(city.id, disease.id)) {
-        results.push({ city: city.id, disease: disease.id, score: risk.score, notified: false, reason: 'déjà notifié récemment' });
-        continue;
-      }
-
-      const subs = db.prepare('SELECT * FROM subscriptions WHERE city_id = ? AND disease_id = ?').all(city.id, disease.id);
-      const label = 'Risque élevé';
+      const subs = db.prepare('SELECT * FROM subscriptions WHERE city_id = ? AND disease_id = ?').all(city.id, diseaseId);
       let sentCount = 0;
       for (const sub of subs) {
-        if (!looksLikeEmail(sub.contact)) continue; // numéros de téléphone ignorés pour l'instant (pas de canal SMS)
+        if (!looksLikeEmail(sub.contact)) continue; // numéros de téléphone ignorés (pas de canal SMS)
         try {
-          await sendAlertEmail(sub.contact, { cityName: city.name, diseaseName: disease.name, score: risk.score, label });
+          await sendAlertEmail(sub.contact, { cityName: city.name, score: risk.score, label: `Risque élevé — ${risk.label}` });
           sentCount++;
         } catch (e) {
           console.error(`[notify] échec d'envoi à ${sub.contact} :`, e.message);
@@ -59,9 +61,9 @@ async function checkAndNotify() {
       }
 
       db.prepare('INSERT INTO alert_log (city_id, disease_id, score, recipients) VALUES (?,?,?,?)')
-        .run(city.id, disease.id, risk.score, sentCount);
+        .run(city.id, diseaseId, risk.score, sentCount);
 
-      results.push({ city: city.id, disease: disease.id, score: risk.score, notified: true, recipients: sentCount, subscribers: subs.length });
+      results.push({ city: city.id, disease: diseaseId, score: risk.score, notified: true, recipients: sentCount, subscribers: subs.length });
     }
   }
 

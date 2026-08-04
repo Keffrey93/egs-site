@@ -65,19 +65,10 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_subscriptions_contact ON subscriptions(contact);
+  CREATE INDEX IF NOT EXISTS idx_subscriptions_city_disease ON subscriptions(city_id, disease_id);
   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
   CREATE INDEX IF NOT EXISTS idx_alert_log_city ON alert_log(city_id, disease_id, sent_at);
   CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 `);
-
-// Migration légère pour les bases eGS créées avant l'ajout du multi-maladies :
-// SQLite ne supporte pas "ADD COLUMN IF NOT EXISTS", on tente et on ignore
-// l'erreur si la colonne existe déjà.
-function addColumnIfMissing(table, columnDef) {
-  try { db.exec(`ALTER TABLE ${table} ADD COLUMN ${columnDef}`); }
-  catch (e) { /* colonne déjà présente — rien à faire */ }
-}
-addColumnIfMissing('subscriptions', "disease_id TEXT NOT NULL DEFAULT 'paludisme'");
-addColumnIfMissing('alert_log', "disease_id TEXT NOT NULL DEFAULT 'paludisme'");
 
 module.exports = { db };

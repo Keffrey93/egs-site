@@ -9,12 +9,12 @@ const http = require('node:http');
 const { URL } = require('node:url');
 const { db } = require('./db.js');
 const { checkAndNotify } = require('./lib/notify.js');
-const { DISEASES } = require('./lib/climate.js');
 const { hashPassword, verifyPassword, generateToken } = require('./lib/auth.js');
-
-const DISEASE_IDS = new Set(DISEASES.map(d => d.id));
+const { CITIES, DISEASES, fetchCityClimate, computeAllRisks } = require('./lib/climate.js');
 
 const SESSION_DURATION_DAYS = 30;
+let risquesCache = { data: null, at: 0 };
+const RISQUES_CACHE_MS = 10 * 60 * 1000; // 10 minutes
 
 const PORT = process.env.PORT || 3001;
 // En développement, laisse '*' pour accepter n'importe quelle origine (fichier local, live-server, etc.).
@@ -114,6 +114,35 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true, time: new Date().toISOString() });
     }
 
+    // ---------- Référentiel des maladies suivies (public, lecture seule) ----------
+    if (req.method === 'GET' && url.pathname === '/api/diseases') {
+      const list = Object.entries(DISEASES).map(([id, d]) => ({
+        id, label: d.label, vector: d.vector, description: d.description,
+      }));
+      return send(res, 200, list);
+    }
+
+    // ---------- Risques calculés par ville et par maladie (public, lecture seule) ----------
+    // Résultat mis en cache quelques minutes pour éviter de marteler NASA POWER
+    // à chaque chargement du tableau de bord.
+    if (req.method === 'GET' && url.pathname === '/api/risques') {
+      const now = Date.now();
+      if (risquesCache.data && (now - risquesCache.at) < RISQUES_CACHE_MS) {
+        return send(res, 200, risquesCache.data);
+      }
+      const results = await Promise.all(CITIES.map(async city => {
+        try {
+          const series = await fetchCityClimate(city);
+          const all = computeAllRisks(series);
+          return { city: city.id, name: city.name, province: city.province, ...all };
+        } catch (e) {
+          return { city: city.id, name: city.name, province: city.province, error: e.message };
+        }
+      }));
+      risquesCache = { data: results, at: now };
+      return send(res, 200, results);
+    }
+
     // ---------- Inscriptions (profils utilisateurs) ----------
     if (parts[0] === 'api' && parts[1] === 'inscriptions') {
       if (req.method === 'POST') {
@@ -187,8 +216,8 @@ const server = http.createServer(async (req, res) => {
         const missing = missingFields(body, ['city', 'contact']);
         if (missing.length) return send(res, 400, { error: `Champs manquants : ${missing.join(', ')}` });
 
-        const diseaseId = body.disease ? String(body.disease).trim() : 'paludisme';
-        if (!DISEASE_IDS.has(diseaseId)) {
+        const diseaseId = (body.disease || 'paludisme').trim();
+        if (!DISEASES[diseaseId]) {
           return send(res, 400, { error: `Maladie inconnue : ${diseaseId}` });
         }
 

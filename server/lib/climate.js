@@ -1,8 +1,12 @@
 /*
-  eGS — Module de données satellite (côté serveur).
-  Même source et même logique que assets/satellite.js (NASA POWER), portées ici
-  pour permettre le calcul des indices de risque sans navigateur, depuis la
-  tâche planifiée d'alertes.
+  eGS — Module de données satellite et calcul de risque multi-maladies (côté serveur).
+  Source unique de vérité pour les scores de risque, réutilisée par le tableau de
+  bord (GET /api/risques), les alertes (lib/notify.js) et le chatbot.
+
+  ⚠️ Ces indices sont des estimations pédagogiques basées sur des heuristiques
+  climatiques simples (température, humidité, précipitations issues de NASA
+  POWER). ILS NE CONSTITUENT PAS UN OUTIL DE DIAGNOSTIC OU DE SURVEILLANCE
+  ÉPIDÉMIOLOGIQUE VALIDÉ — à ne jamais présenter comme tel.
 */
 'use strict';
 
@@ -17,119 +21,6 @@ const CITIES = [
   { id: 'makokou',      name: 'Makokou',      province: 'Ogooué-Ivindo',  lat: 0.5667,  lon: 12.8667 },
   { id: 'koulamoutou',  name: 'Koulamoutou',  province: 'Ogooué-Lolo',    lat: -1.1333, lon: 12.4833 },
 ];
-
-// ---------------------------------------------------------------------------
-// Registre des maladies suivies. Toutes utilisent les mêmes variables NASA
-// POWER (température, humidité, précipitations) mais avec des profils de
-// sensibilité différents selon leur mode de transmission :
-//  - "vecteur"  : moustiques (Anophèle pour le paludisme, Aedes pour les autres)
-//  - "hydrique" : liée aux précipitations/inondations et à la qualité de l'eau
-//  - "autre"    : lien climatique plus indirect (saison sèche, végétation)
-// ⚠️ Modèles simplifiés à visée pédagogique/exploratoire — pas des outils de
-// diagnostic ni de surveillance épidémiologique certifiée.
-// ---------------------------------------------------------------------------
-const DISEASES = [
-  {
-    id: 'paludisme', name: 'Paludisme', category: 'vecteur',
-    vector: 'Moustique Anophèle',
-    short: 'Piqûre de moustique femelle Anophèle ; gîtes larvaires en eaux stagnantes.',
-    tempOptimal: 27, tempSensitivity: 9,
-    humidityDirection: 'high', humidityRef: 40, humidityFactor: 100 / 50,
-    precipProfile: 'moderate',
-    wTemp: 0.40, wHum: 0.35, wPrecip: 0.25,
-  },
-  {
-    id: 'dengue', name: 'Dengue', category: 'vecteur',
-    vector: 'Moustique Aedes aegypti',
-    short: 'Gîtes larvaires domestiques : pneus, réservoirs, gouttières, eaux stagnantes.',
-    tempOptimal: 29, tempSensitivity: 8,
-    humidityDirection: 'high', humidityRef: 45, humidityFactor: 100 / 45,
-    precipProfile: 'moderate',
-    wTemp: 0.45, wHum: 0.30, wPrecip: 0.25,
-  },
-  {
-    id: 'chikungunya', name: 'Chikungunya', category: 'vecteur',
-    vector: 'Moustique Aedes',
-    short: 'Même vecteur et dynamique climatique que la dengue.',
-    tempOptimal: 29, tempSensitivity: 8,
-    humidityDirection: 'high', humidityRef: 45, humidityFactor: 100 / 45,
-    precipProfile: 'moderate',
-    wTemp: 0.45, wHum: 0.30, wPrecip: 0.25,
-  },
-  {
-    id: 'zika', name: 'Zika', category: 'vecteur',
-    vector: 'Moustique Aedes',
-    short: 'Même famille de vecteurs que la dengue et le chikungunya.',
-    tempOptimal: 29, tempSensitivity: 8,
-    humidityDirection: 'high', humidityRef: 45, humidityFactor: 100 / 45,
-    precipProfile: 'moderate',
-    wTemp: 0.45, wHum: 0.30, wPrecip: 0.25,
-  },
-  {
-    id: 'fievre-jaune', name: 'Fièvre jaune', category: 'vecteur',
-    vector: 'Moustique Aedes (cycle sylvatique)',
-    short: 'Présente au Gabon ; cycle de transmission lié au couvert forestier.',
-    tempOptimal: 28, tempSensitivity: 8,
-    humidityDirection: 'high', humidityRef: 55, humidityFactor: 100 / 45,
-    precipProfile: 'moderate',
-    wTemp: 0.40, wHum: 0.35, wPrecip: 0.25,
-  },
-  {
-    id: 'cholera', name: 'Choléra', category: 'hydrique',
-    vector: "Eau/aliments contaminés",
-    short: "Pics après fortes pluies et inondations, contamination des points d'eau.",
-    tempOptimal: 29, tempSensitivity: 5,
-    humidityDirection: 'high', humidityRef: 50, humidityFactor: 100 / 50,
-    precipProfile: 'flood', precipFactor: 1.1,
-    wTemp: 0.15, wHum: 0.15, wPrecip: 0.70,
-  },
-  {
-    id: 'typhoide', name: 'Fièvre typhoïde', category: 'hydrique',
-    vector: "Eau/aliments contaminés",
-    short: "Logique saisonnière proche du choléra, liée à l'eau contaminée.",
-    tempOptimal: 28, tempSensitivity: 5,
-    humidityDirection: 'high', humidityRef: 50, humidityFactor: 100 / 50,
-    precipProfile: 'flood', precipFactor: 1.0,
-    wTemp: 0.15, wHum: 0.15, wPrecip: 0.70,
-  },
-  {
-    id: 'diarrhees', name: 'Diarrhées infectieuses', category: 'hydrique',
-    vector: "Rupture d'accès à l'eau potable",
-    short: "Corrélées aux ruptures d'accès à l'eau potable après intempéries.",
-    tempOptimal: 28, tempSensitivity: 4,
-    humidityDirection: 'high', humidityRef: 50, humidityFactor: 100 / 55,
-    precipProfile: 'flood', precipFactor: 1.0,
-    wTemp: 0.10, wHum: 0.15, wPrecip: 0.75,
-  },
-  {
-    id: 'meningite', name: 'Méningite à méningocoque', category: 'autre',
-    vector: "Diffusion aérienne (favorisée par l'air sec et poussiéreux)",
-    short: "Lien climatique indirect à la saison sèche ; moins typique au Gabon que dans la ceinture sahélienne.",
-    tempOptimal: 32, tempSensitivity: 6,
-    humidityDirection: 'low', humidityRef: 55, humidityFactor: 100 / 45,
-    precipProfile: 'low', precipFactor: 2.5,
-    wTemp: 0.30, wHum: 0.40, wPrecip: 0.30,
-  },
-  {
-    id: 'trypanosomiase', name: 'Trypanosomiase (maladie du sommeil)', category: 'autre',
-    vector: 'Mouche tsé-tsé',
-    short: "Sensible à la végétation et à l'humidité — pertinent pour une future intégration Sentinel-2.",
-    tempOptimal: 26, tempSensitivity: 7,
-    humidityDirection: 'high', humidityRef: 55, humidityFactor: 100 / 40,
-    precipProfile: 'moderate',
-    wTemp: 0.35, wHum: 0.40, wPrecip: 0.25,
-  },
-];
-
-const DISEASE_CATEGORY_LABELS = {
-  vecteur: 'Maladie à vecteur (moustique)',
-  hydrique: 'Maladie hydrique',
-  autre: 'Lien climatique indirect',
-};
-
-function getDisease(id) {
-  return DISEASES.find(d => d.id === id) || DISEASES[0];
-}
 
 function fmtDate(d) {
   return d.toISOString().slice(0, 10).replace(/-/g, '');
@@ -155,45 +46,130 @@ async function fetchCityClimate(city) {
     .filter(d => d.temp > -900 && d.humidity > -900 && d.precip > -900); // POWER renvoie -999 si absent
 }
 
-// Indice de risque simplifié (0-100) pour une maladie donnée — PAS un outil de
-// diagnostic médical ni de surveillance épidémiologique officielle.
-function diseaseRiskIndex(diseaseId, series) {
-  if (!series.length) return null;
-  const disease = getDisease(diseaseId);
+function summarize(series) {
   const avg = key => series.reduce((s, d) => s + d[key], 0) / series.length;
-  const temp = avg('temp');
-  const humidity = avg('humidity');
-  const precipTotal = series.reduce((s, d) => s + d.precip, 0);
-
-  const tempScore = Math.max(0, 100 - Math.abs(temp - disease.tempOptimal) * disease.tempSensitivity);
-
-  const humScore = disease.humidityDirection === 'low'
-    ? Math.min(100, Math.max(0, (disease.humidityRef - humidity) * disease.humidityFactor))
-    : Math.min(100, Math.max(0, (humidity - disease.humidityRef) * disease.humidityFactor));
-
-  let precipScore;
-  if (disease.precipProfile === 'flood') {
-    precipScore = Math.min(100, precipTotal * disease.precipFactor);
-  } else if (disease.precipProfile === 'low') {
-    precipScore = Math.max(0, 100 - precipTotal * disease.precipFactor);
-  } else {
-    precipScore = precipTotal <= 2 ? precipTotal * 15
-      : precipTotal <= 40 ? 30 + (precipTotal - 2) * 1.6
-      : Math.max(20, 100 - (precipTotal - 40) * 1.2);
-  }
-
-  const score = Math.round(
-    tempScore * disease.wTemp + humScore * disease.wHum + Math.min(100, precipScore) * disease.wPrecip
-  );
-  return { score: Math.max(0, Math.min(100, score)), temp, humidity, precipTotal, diseaseId: disease.id };
+  return {
+    temp: avg('temp'),
+    humidity: avg('humidity'),
+    precipTotal: series.reduce((s, d) => s + d.precip, 0),
+  };
 }
 
-// Rétrocompatibilité : l'ancien riskIndex() calculait uniquement le paludisme.
-function riskIndex(series) {
-  return diseaseRiskIndex('paludisme', series);
+// ---------- Fonctions de score génériques (0-100), réutilisées par plusieurs maladies ----------
+function tempBell(temp, optimal, spread) {
+  return Math.max(0, 100 - Math.abs(temp - optimal) * spread);
+}
+function humidityLinear(humidity, floor, range) {
+  return Math.min(100, Math.max(0, (humidity - floor) * (100 / range)));
+}
+function humidityInverse(humidity, ceiling, range) {
+  return Math.min(100, Math.max(0, (ceiling - humidity) * (100 / range)));
+}
+// Courbe "gîtes larvaires" : peu de pluie = peu d'eau stagnante, trop de pluie = ça rince/emporte les gîtes.
+function precipVector(precipTotal) {
+  const score = precipTotal <= 2 ? precipTotal * 15
+    : precipTotal <= 40 ? 30 + (precipTotal - 2) * 1.6
+    : Math.max(20, 100 - (precipTotal - 40) * 1.2);
+  return Math.min(100, score);
+}
+// Courbe "inondation / contamination de l'eau" : le risque croît avec le cumul de pluie.
+function precipFlood(precipTotal) {
+  return Math.min(100, precipTotal * 2.2);
+}
+// Courbe "saison sèche" : le risque croît quand il pleut peu (poussière, promiscuité).
+function precipDry(precipTotal) {
+  return Math.min(100, Math.max(0, 100 - precipTotal * 3));
 }
 
-module.exports = {
-  CITIES, DISEASES, DISEASE_CATEGORY_LABELS,
-  getDisease, fetchCityClimate, diseaseRiskIndex, riskIndex,
+// ---------- Registre des maladies ----------
+// Chaque entrée : label affiché, vecteur/mode de transmission, et compute(avg) -> score 0-100.
+const DISEASES = {
+  paludisme: {
+    label: 'Paludisme',
+    vector: 'Moustique Anophèle',
+    description: "L'Anophèle se développe entre 20 et 30°C ; l'eau stagnante après la pluie favorise les gîtes larvaires.",
+    compute: avg => tempBell(avg.temp, 27, 9) * 0.4 + humidityLinear(avg.humidity, 40, 50) * 0.35 + precipVector(avg.precipTotal) * 0.25,
+  },
+  dengue: {
+    label: 'Dengue',
+    vector: 'Moustique Aedes aegypti',
+    description: "Aedes aegypti préfère des températures plus chaudes que l'Anophèle et se reproduit dans de petits récipients d'eau, y compris en ville.",
+    compute: avg => tempBell(avg.temp, 29, 8) * 0.45 + humidityLinear(avg.humidity, 45, 45) * 0.3 + precipVector(avg.precipTotal) * 0.25,
+  },
+  chikungunya: {
+    label: 'Chikungunya',
+    vector: 'Moustique Aedes (même vecteur que la dengue)',
+    description: "Même vecteur et donc même dynamique climatique que la dengue.",
+    compute: avg => tempBell(avg.temp, 29, 8) * 0.45 + humidityLinear(avg.humidity, 45, 45) * 0.3 + precipVector(avg.precipTotal) * 0.25,
+  },
+  zika: {
+    label: 'Zika',
+    vector: 'Moustique Aedes (même vecteur que la dengue)',
+    description: "Même vecteur et donc même dynamique climatique que la dengue.",
+    compute: avg => tempBell(avg.temp, 29, 8) * 0.45 + humidityLinear(avg.humidity, 45, 45) * 0.3 + precipVector(avg.precipTotal) * 0.25,
+  },
+  fievre_jaune: {
+    label: 'Fièvre jaune',
+    vector: 'Moustique Aedes (cycle urbain et sylvatique)',
+    description: "Vecteur Aedes également ; le cycle sylvatique (forêt) n'est pas modélisé ici faute de donnée de couvert forestier.",
+    compute: avg => tempBell(avg.temp, 28, 8) * 0.4 + humidityLinear(avg.humidity, 45, 45) * 0.3 + precipVector(avg.precipTotal) * 0.3,
+  },
+  cholera: {
+    label: 'Choléra',
+    vector: 'Eau et aliments contaminés',
+    description: "Le risque suit surtout le cumul de précipitations : fortes pluies et inondations favorisent la contamination des points d'eau.",
+    compute: avg => precipFlood(avg.precipTotal) * 0.7 + humidityLinear(avg.humidity, 50, 40) * 0.3,
+  },
+  typhoide: {
+    label: 'Fièvre typhoïde',
+    vector: 'Eau et aliments contaminés',
+    description: "Même logique que le choléra (eau contaminée), avec une courbe de risque un peu plus progressive.",
+    compute: avg => precipFlood(avg.precipTotal) * 0.55 + humidityLinear(avg.humidity, 50, 40) * 0.25 + tempBell(avg.temp, 28, 10) * 0.2,
+  },
+  diarrhees: {
+    label: 'Diarrhées infectieuses',
+    vector: 'Eau et aliments contaminés',
+    description: "Corrélées aux ruptures d'accès à l'eau potable après de fortes pluies ou inondations.",
+    compute: avg => precipFlood(avg.precipTotal) * 0.6 + humidityLinear(avg.humidity, 50, 40) * 0.4,
+  },
+  meningite: {
+    label: 'Méningite à méningocoque',
+    vector: 'Transmission respiratoire (gouttelettes)',
+    description: "Le risque est classiquement associé à la saison sèche (air sec, poussière, promiscuité) — plus pertinent pour la ceinture sahélienne que pour le climat équatorial du Gabon, généralement humide toute l'année.",
+    compute: avg => precipDry(avg.precipTotal) * 0.5 + humidityInverse(avg.humidity, 70, 40) * 0.5,
+  },
+  trypanosomiase: {
+    label: 'Trypanosomiase (maladie du sommeil)',
+    vector: 'Mouche tsé-tsé',
+    description: "La mouche tsé-tsé affectionne les zones humides et boisées proches des points d'eau ; approximé ici par une humidité élevée et une température modérée.",
+    compute: avg => humidityLinear(avg.humidity, 55, 35) * 0.5 + tempBell(avg.temp, 25, 7) * 0.3 + precipVector(avg.precipTotal) * 0.2,
+  },
 };
+
+// Calcule le score de toutes les maladies à partir d'une même série climatique
+// (une seule requête NASA POWER par ville, réutilisée pour toutes les maladies).
+function computeAllRisks(series) {
+  if (!series.length) return null;
+  const avg = summarize(series);
+  const scores = {};
+  for (const [id, disease] of Object.entries(DISEASES)) {
+    const raw = disease.compute(avg);
+    scores[id] = {
+      id,
+      label: disease.label,
+      vector: disease.vector,
+      score: Math.max(0, Math.min(100, Math.round(raw))),
+    };
+  }
+  return { ...avg, diseases: scores };
+}
+
+// Rétrocompatibilité : ancien indice paludisme seul (utilisé nulle part d'autre
+// désormais, mais conservé au cas où).
+function riskIndex(series) {
+  const all = computeAllRisks(series);
+  if (!all) return null;
+  return { score: all.diseases.paludisme.score, temp: all.temp, humidity: all.humidity, precipTotal: all.precipTotal };
+}
+
+module.exports = { CITIES, DISEASES, fetchCityClimate, computeAllRisks, riskIndex };
